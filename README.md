@@ -12,6 +12,14 @@ A macOS-inspired global menu for GNOME Shell — places a clean, unified applica
 - System integration (Settings, Trash, Help, App Details)
 - Configurable app blacklist via preferences UI
 
+## Performance
+
+- **Debounced focus events** — 50ms GLib timeout prevents rebuild storms during rapid window switching (Alt+Tab animation fires the signal 5–10x per transition)
+- **In-place panel updates** — existing buttons are reused and relabeled instead of destroyed and recreated (zero widget churn at steady state)
+- **Cached static menus** — File/Edit/View/Go/Window/Help menus computed once at module load, never rebuilt per focus change
+- **Cached blacklist** — pre-lowercased with early exit when empty (no string ops in the common case)
+- **Cached virtual keyboard device** — single Clutter device reused across all shortcut actions instead of allocating one per invocation
+
 ## Requirements
 
 - GNOME Shell 45–50

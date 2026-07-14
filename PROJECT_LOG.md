@@ -4,63 +4,78 @@
 |---|---|
 | Project Name | MacTop |
 | Start Date | 2025-07-14 |
-| Current Version | 0.1.0 |
+| Current Version | 0.2.0 |
 | Architecture | One-Man Show |
 | Primary Agent | Senior GNOME Extension Engineer (`GNOME-Eng`) |
 
 ---
 
-## Log Format
-
-Every entry must contain:
-
-| Column | Description |
-|---|---|
-| Timestamp | ISO 8601 (`YYYY-MM-DDTHH:MM:SSZ`) |
-| Author | Agent identifier or user |
-| Action Type | `Feature` / `Decision` / `Bugfix` / `Refactor` / `Infra` / `Docs` |
-| Change | Description of what changed |
-| Rationale | Why it was changed |
-| Impact | Downstream effects on other files, systems, or users |
-
----
-
 ## Entries
 
-### ENTRY-001
+### ENTRY-001 — Infra
 
 | Field | Value |
 |---|---|
-| Timestamp | `2025-07-14T00:00:00Z` |
-| Author | `GNOME-Eng` |
-| Action Type | `Infra` |
-| Change | Project scaffold initialized — directory tree, agent definition, foundation logs, VERSION_CONTROL.md |
-| Rationale | Establish professional project structure and version control enforcement before feature work |
-| Impact | All future work flows through this structure; `.gitignore` and branching strategy now active |
+| Date | 2025-07-14 |
+| Change | Project scaffold initialized |
 
-### ENTRY-002
+### ENTRY-002 — Feature
 
 | Field | Value |
 |---|---|
-| Timestamp | `2025-07-14T00:00:00Z` |
-| Author | `GNOME-Eng` |
-| Action Type | `Feature` |
-| Change | Core extension replicated from `global-menu-for-gnome` with MacTop branding (UUID: `mactop@anorak`) |
-| Rationale | Fork original project under new namespace for independent development |
-| Impact | `extension.js`, `menuManager.js`, `metadata.json`, install/uninstall scripts, schema all rebranded |
+| Date | 2025-07-14 |
+| Change | Core extension replicated from `global-menu-for-gnome` with MacTop branding |
 
----
-
-### ENTRY-003
+### ENTRY-003 — Bugfix
 
 | Field | Value |
 |---|---|
-| Timestamp | `2025-07-14T00:00:00Z` |
-| Author | `GNOME-Eng` |
-| Action Type | `Bugfix` |
-| Change | Added `prefs.js` — required by GNOME Shell for extension preferences dialog |
-| Rationale | Missing `prefs.js` caused `ImportError` when opening extension settings in GNOME Extensions app |
-| Impact | `prefs.js` created in project root and `src/`, `install.sh` updated to copy it |
+| Date | 2025-07-14 |
+| Change | Added `prefs.js` to fix ImportError in GNOME Extensions app |
+
+### ENTRY-004 — Refactor
+
+| Field | Value |
+|---|---|
+| Date | 2025-07-15 |
+| Change | Removed redundant `src/` directory (exact copies of root files) |
+
+### ENTRY-005 — Refactor
+
+| Field | Value |
+|---|---|
+| Date | 2025-07-15 |
+| Change | Extracted action system into `actions/` module (dispatcher, window, file, keyboard, scancodes) |
+| Impact | `menuManager.js` `_executeNativeAction` reduced from ~180 lines to 8 lines |
+
+### ENTRY-006 — Refactor
+
+| Field | Value |
+|---|---|
+| Date | 2025-07-15 |
+| Change | Extracted menu definitions into `menus/` module (app, file, edit, view, go, window, help) |
+| Impact | `menuManager.js` reduced from 432 to 158 lines |
+
+### ENTRY-007 — Feature
+
+| Field | Value |
+|---|---|
+| Date | 2025-07-15 |
+| Change | Built settings UI with Adw (General + Blacklist pages), configurable app blacklist via GSettings |
+
+### ENTRY-008 — Bugfix
+
+| Field | Value |
+|---|---|
+| Date | 2025-07-15 |
+| Change | Added `about-mactop` handler, removed 4 dead menu items (compress, duplicate, view-icons, view-list) |
+
+### ENTRY-009 — Fix
+
+| Field | Value |
+|---|---|
+| Date | 2025-07-15 |
+| Change | Added `stylesheet.css`, updated install/uninstall scripts, bumped version to 2, updated README |
 
 ---
 

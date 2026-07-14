@@ -16,6 +16,7 @@ echo "Copying extension files..."
 cp -rv "$SOURCE_DIR/metadata.json" "$EXTENSION_DIR/"
 cp -rv "$SOURCE_DIR/extension.js" "$EXTENSION_DIR/"
 cp -rv "$SOURCE_DIR/menuManager.js" "$EXTENSION_DIR/"
+cp -rv "$SOURCE_DIR/prefs.js" "$EXTENSION_DIR/"
 cp -rv "$SOURCE_DIR/uninstall.sh" "$EXTENSION_DIR/"
 cp -rv "$SOURCE_DIR/schemas" "$EXTENSION_DIR/"
 

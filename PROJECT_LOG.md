@@ -51,4 +51,17 @@ Every entry must contain:
 
 ---
 
+### ENTRY-003
+
+| Field | Value |
+|---|---|
+| Timestamp | `2025-07-14T00:00:00Z` |
+| Author | `GNOME-Eng` |
+| Action Type | `Bugfix` |
+| Change | Added `prefs.js` — required by GNOME Shell for extension preferences dialog |
+| Rationale | Missing `prefs.js` caused `ImportError` when opening extension settings in GNOME Extensions app |
+| Impact | `prefs.js` created in project root and `src/`, `install.sh` updated to copy it |
+
+---
+
 *New entries append below this line.*

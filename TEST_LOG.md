@@ -18,6 +18,7 @@
 | TS-010 | Timeout callbacks cleared on disable | Stability | Pending | `_timeoutIds` array empty after `destroy()` |
 | TS-011 | Install script copies all files to correct UUID dir | Infra | Pending | Verify `~/.local/share/gnome-shell/extensions/mactop@anorak/` |
 | TS-012 | Uninstall script removes extension completely | Infra | Pending | Directory gone, extension disabled |
+| TS-013 | Extension preferences dialog opens without ImportError | Smoke | Pending | `prefs.js` present and exports valid class |
 
 ---
 

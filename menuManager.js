@@ -2,6 +2,7 @@ import GObject from 'gi://GObject';
 import St from 'gi://St';
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
+import Gio from 'gi://Gio';
 import Shell from 'gi://Shell';
 import * as PanelMenu from "resource:///org/gnome/shell/ui/panelMenu.js";
 import * as PopupMenu from "resource:///org/gnome/shell/ui/popupMenu.js";
@@ -16,8 +17,49 @@ import { buildGoMenu } from './menus/goMenu.js';
 import { buildWindowMenu } from './menus/windowMenu.js';
 import { buildHelpMenu } from './menus/helpMenu.js';
 
+// Distro icon map — common Linux distros
+const DISTRO_ICONS = {
+    'debian':     '.debian-logo',
+    'ubuntu':     'ubuntu-logo',
+    'fedora':     'fedora-logo',
+    'arch':       'archlinux-logo',
+    'manjaro':    'manjaro-logo',
+    'opensuse':   'opensuse-logo',
+    'centos':     'centos-logo',
+    'rhel':       'rhel-logo',
+    'alpine':     'alpine-logo',
+    'mint':       'linuxmint-logo',
+    'pop':        'pop-logo',
+    'elementary': 'elementary-logo',
+    'garuda':     'garuda-logo',
+    'nixos':      'nixos-logo',
+    'void':       'void-logo',
+    'gentoo':     'gentoo-logo',
+    'slackware':  'slackware-logo',
+    'solus':      'solus-logo',
+    'zorin':      'zorin-logo',
+    'endeavour':  'endeavour-logo',
+    'nobara':     'nobara-logo',
+};
+
+function detectDistroIcon() {
+    try {
+        const [ok, contents] = GLib.file_get_contents('/etc/os-release');
+        if (!ok) return 'debian-logo';
+        const text = new TextDecoder().decode(contents);
+        const idMatch = text.match(/^ID=(.+)$/m);
+        if (idMatch) {
+            const id = idMatch[1].replace(/"/g, '').trim().toLowerCase();
+            return DISTRO_ICONS[id] || 'debian-logo';
+        }
+    } catch (e) {
+        // fallback
+    }
+    return 'debian-logo';
+}
+
 // Apple Menu — always present, computed once
-const APPLE_MENU = { label: "\uF8FF", children: buildAppleMenu() };
+const APPLE_MENU_CHILDREN = buildAppleMenu();
 
 // Static menus — computed once, never change
 const STATIC_MENUS = [
@@ -106,6 +148,22 @@ export class MenuManager {
         // Pre-allocated blacklist cache
         this._cachedBlacklist = null;
         this._cachedBlacklistLower = null;
+
+        // System menu icon — read from settings or auto-detect
+        this._cachedMenuIcon = null;
+    }
+
+    get _menuIcon() {
+        if (this._cachedMenuIcon !== null) return this._cachedMenuIcon;
+        if (this._settings) {
+            const setting = this._settings.get_string('menu-icon');
+            if (setting && setting.length > 0) {
+                this._cachedMenuIcon = setting;
+                return this._cachedMenuIcon;
+            }
+        }
+        this._cachedMenuIcon = detectDistroIcon();
+        return this._cachedMenuIcon;
     }
 
     get _blacklist() {
@@ -185,7 +243,7 @@ export class MenuManager {
             : buildFallbackAppMenu();
 
         const newMenuData = [
-            APPLE_MENU,
+            { label: this._menuIcon, children: APPLE_MENU_CHILDREN },
             { label: appName, children: appChildren },
             ...STATIC_MENUS,
         ];

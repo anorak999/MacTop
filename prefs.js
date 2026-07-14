@@ -27,6 +27,29 @@ export default class MacTopPreferences extends ExtensionPreferences {
         settings.bind('show-indicator', indicatorRow, 'active', Gio.SettingsBindFlags.DEFAULT);
         indicatorGroup.add(indicatorRow);
 
+        // Appearance group
+        const appearanceGroup = new Adw.PreferencesGroup({
+            title: 'Appearance',
+        });
+        generalPage.add(appearanceGroup);
+
+        const iconRow = new Adw.EntryRow({
+            title: 'System Menu Icon',
+        });
+        const currentIcon = settings.get_string('menu-icon');
+        iconRow.set_text(currentIcon);
+        iconRow.connect('changed', () => {
+            settings.set_string('menu-icon', iconRow.get_text());
+        });
+        appearanceGroup.add(iconRow);
+
+        const iconHelpRow = new Adw.ActionRow({
+            title: 'Leave empty to auto-detect distro icon',
+            subtitle: 'Accepts: icon name (e.g. debian-logo, ubuntu-logo), emoji, or text.',
+            activatable: false,
+        });
+        appearanceGroup.add(iconHelpRow);
+
         // --- Blacklist page ---
         const blacklistPage = new Adw.PreferencesPage({
             title: 'Blacklist',

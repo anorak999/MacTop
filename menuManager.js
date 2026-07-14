@@ -7,6 +7,13 @@ import * as PanelMenu from "resource:///org/gnome/shell/ui/panelMenu.js";
 import * as PopupMenu from "resource:///org/gnome/shell/ui/popupMenu.js";
 import * as Main from "resource:///org/gnome/shell/ui/main.js";
 import { dispatch } from './actions/dispatcher.js';
+import { buildAppMenu, buildFallbackAppMenu } from './menus/appMenu.js';
+import { buildFileMenu } from './menus/fileMenu.js';
+import { buildEditMenu } from './menus/editMenu.js';
+import { buildViewMenu } from './menus/viewMenu.js';
+import { buildGoMenu } from './menus/goMenu.js';
+import { buildWindowMenu } from './menus/windowMenu.js';
+import { buildHelpMenu } from './menus/helpMenu.js';
 
 const TopLevelMenuButton = GObject.registerClass(
   class TopLevelMenuButton extends PanelMenu.Button {
@@ -29,7 +36,6 @@ const TopLevelMenuButton = GObject.registerClass(
         const ctx = {
             window: global.display.get_focus_window(),
             app: this._appInstance,
-            desktopId: '',
         };
         return dispatch(action, ctx, this._menuManagerInstance);
     }
@@ -74,7 +80,6 @@ export class MenuManager {
 
         let appName = "Finder";
         let isAppFocused = false;
-        let desktopId = "";
         let detectedApp = null;
 
         if (window) {
@@ -98,11 +103,9 @@ export class MenuManager {
                 if (!isBlacklisted && (detectedApp || wmClass)) {
                     if (detectedApp) {
                         appName = detectedApp.get_name();
-                        desktopId = detectedApp.get_id();
                         isAppFocused = true;
                     } else if (wmClass) {
                         appName = wmClass.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-                        desktopId = wmClass.toLowerCase() + ".desktop";
                         isAppFocused = true;
                     }
                 } else {
@@ -111,124 +114,18 @@ export class MenuManager {
             }
         }
 
-        let firstMenuChildren = [];
-        if (isAppFocused) {
-            if (detectedApp) {
-                let openWindows = detectedApp.get_windows();
-                if (openWindows.length > 0) {
-                    firstMenuChildren.push({ type: "section-header", label: "Open Windows" });
-                    openWindows.forEach(win => {
-                        firstMenuChildren.push({
-                            label: win.get_title() || appName,
-                            action: `activate-window:${win.get_id()}`
-                        });
-                    });
-                    firstMenuChildren.push({ type: "separator" });
-                }
-            }
-            firstMenuChildren.push(
-                { label: "New Window", action: "new-app-window" },
-                { type: "separator" },
-                { label: "App Details", action: `app-details:${desktopId}` },
-                { type: "separator" },
-                { label: `Quit ${appName}`, action: "close" }
-            );
-        } else {
-            firstMenuChildren = [
-                { label: "About MacTop", action: "about-mactop" },
-                { type: "separator" },
-                { label: "Open Finder", action: "open-finder" },
-                { label: "Settings", action: "open-settings" },
-                { type: "separator" },
-                { label: "Empty Bin...", action: "empty-bin" }
-            ];
-        }
+        const appChildren = isAppFocused
+            ? buildAppMenu(appName, detectedApp)
+            : buildFallbackAppMenu();
 
         const menuData = [
-            {
-                type: "submenu",
-                label: appName,
-                children: firstMenuChildren
-            },
-            {
-                type: "submenu",
-                label: "File",
-                children: [
-                    { label: "New Finder Window", action: "new-finder-win" },
-                    { label: "New Folder", action: "new-folder" },
-                    { label: "New Tab", action: "new-tab" },
-                    { label: "Open", action: "virtual-open" },
-                    { label: "Open With", action: "native-open-with" },
-                    { label: "Print", action: "print" },
-                    { type: "separator" },
-                    { label: "Get Info", action: "properties" },
-                    { label: "Compress", action: "compress" },
-                    { label: "Duplicate", action: "duplicate" },
-                    { type: "separator" },
-                    { label: "Move to Trash", action: "delete-item" },
-                    { type: "separator" },
-                    { label: "Close Window", action: "close" }
-                ]
-            },
-            {
-                type: "submenu",
-                label: "Edit",
-                children: [
-                    { label: "Undo", action: "undo" },
-                    { label: "Redo", action: "redo" },
-                    { type: "separator" },
-                    { label: "Cut", action: "cut" },
-                    { label: "Copy", action: "copy" },
-                    { label: "Paste", action: "paste" },
-                    { label: "Delete", action: "delete-item" },
-                    { type: "separator" },
-                    { label: "Select All", action: "select-all" },
-                    { type: "separator" },
-                    { label: "Emoji & Symbols", action: "emoji-picker" }
-                ]
-            },
-            {
-                type: "submenu",
-                label: "View",
-                children: [
-                    { label: "as Icons", action: "view-icons" },
-                    { label: "as List", action: "view-list" },
-                    { type: "separator" },
-                    { label: "Enter Full Screen", action: "toggle-fullscreen" }
-                ]
-            },
-            {
-                type: "submenu",
-                label: "Go",
-                children: [
-                    { label: "Back", action: "go-back" },
-                    { label: "Forward", action: "go-forward" },
-                    { type: "separator" },
-                    { label: "Recents", action: "go-recents" },
-                    { label: "Documents", action: "go-documents" },
-                    { label: "Desktop", action: "go-desktop" },
-                    { label: "Downloads", action: "go-downloads" },
-                    { label: "Home", action: "go-home" }
-                ]
-            },
-            {
-                type: "submenu",
-                label: "Window",
-                children: [
-                    { label: "Minimize", action: "minimize" },
-                    { label: "Maximize", action: "maximize" },
-                    { type: "separator" },
-                    { label: "Close", action: "close" }
-                ]
-            },
-            {
-                type: "submenu",
-                label: "Help",
-                children: [
-                    { label: "Send Feedback", action: "send-feedback" },
-                    { label: "GNOME Help", action: "open-system-help" }
-                ]
-            }
+            { type: "submenu", label: appName, children: appChildren },
+            { type: "submenu", label: "File",   children: buildFileMenu() },
+            { type: "submenu", label: "Edit",   children: buildEditMenu() },
+            { type: "submenu", label: "View",   children: buildViewMenu() },
+            { type: "submenu", label: "Go",     children: buildGoMenu() },
+            { type: "submenu", label: "Window", children: buildWindowMenu() },
+            { type: "submenu", label: "Help",   children: buildHelpMenu() },
         ];
 
         menuData.forEach((item, index) => {

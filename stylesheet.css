@@ -1,0 +1,13 @@
+/* MacTop panel button label */
+.panel-button-label {
+    font-weight: bold;
+    font-size: 10pt;
+    padding: 0 6px;
+}
+
+/* Section headers in popup menus (e.g. "Open Windows") */
+.popup-subtitle-menu-item {
+    font-weight: bold;
+    font-size: 9pt;
+    color: #999;
+}

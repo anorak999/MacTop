@@ -10,7 +10,7 @@ A macOS-inspired global menu for GNOME Shell — places a clean, unified applica
 - Navigation (Back, Forward, Recents, Documents, Desktop, Downloads, Home)
 - Window management (Minimize, Maximize, Close, Full Screen)
 - System integration (Settings, Trash, Help, App Details)
-- Blacklist for system processes (gnome-shell, mutter, nautilus)
+- Configurable app blacklist via preferences UI
 
 ## Requirements
 
@@ -20,7 +20,7 @@ A macOS-inspired global menu for GNOME Shell — places a clean, unified applica
 ## Installation
 
 ```bash
-git clone https://github.com/anorak/MacTop.git
+git clone https://github.com/anorak999/MacTop.git
 cd MacTop
 bash install.sh
 ```
@@ -37,21 +37,30 @@ bash uninstall.sh
 
 ```
 MacTop/
-├── agents/
-│   └── senior-gnome-extension-engineer.md
-├── docs/
-├── src/
-│   ├── extension.js
-│   ├── menuManager.js
-│   └── schemas/
-├── tests/
-├── PROJECT_LOG.md
-├── TEST_LOG.md
-├── VERSION_CONTROL.md
+├── extension.js              # Entry point
+├── menuManager.js            # Panel menu orchestrator
+├── prefs.js                  # Settings UI (Adw)
+├── stylesheet.css            # Panel and menu styles
+├── metadata.json             # GNOME Shell extension metadata
+├── schemas/
+│   └── org.gnome.shell.extensions.mactop.gschema.xml
+├── actions/
+│   ├── dispatcher.js         # Action registry and dispatch
+│   ├── windowActions.js      # Window actions (close, minimize, maximize)
+│   ├── fileActions.js        # File/system actions (finder, folders, trash)
+│   ├── keyboardActions.js    # Virtual keyboard shortcuts
+│   └── scancodes.js          # Named scan code constants
+├── menus/
+│   ├── appMenu.js            # Dynamic app submenu
+│   ├── fileMenu.js           # File menu definition
+│   ├── editMenu.js           # Edit menu definition
+│   ├── viewMenu.js           # View menu definition
+│   ├── goMenu.js             # Go menu definition
+│   ├── windowMenu.js         # Window menu definition
+│   └── helpMenu.js           # Help menu definition
 ├── install.sh
 ├── uninstall.sh
-├── metadata.json
-└── .gitignore
+└── tests/
 ```
 
 ## License

@@ -19,6 +19,9 @@ export const fileActions = {
 
     // Finder Menu
     'open-settings-ext': () => GLib.spawn_command_line_async('gnome-extensions prefs mactop@anorak'),
+    'hide-app': () => GLib.spawn_command_line_async('gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell --method org.gnome.Shell.Eval "global.get_window_actors().filter(a => a.meta_window.has_focus()).forEach(a => a.meta_window.minimize())" 2>/dev/null'),
+    'hide-others': () => GLib.spawn_command_line_async('gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell --method org.gnome.Shell.Eval "global.get_window_actors().filter(a => !a.meta_window.has_focus() && !a.meta_window.is_skip_taskbar()).forEach(a => a.meta_window.minimize())" 2>/dev/null'),
+    'show-all': () => GLib.spawn_command_line_async('gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell --method org.gnome.Shell.Eval "global.get_window_actors().forEach(a => { if (a.meta_window.is_minimized()) a.meta_window.activate(global.get_current_time()); })" 2>/dev/null'),
 
     // File Menu
     'open-finder': () => GLib.spawn_command_line_async(`xdg-open ${home()}`),

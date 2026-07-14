@@ -32,14 +32,18 @@ export function buildAppMenu(appName, detectedApp) {
 
 /**
  * Build the fallback app menu when no app is focused (desktop/Finder state).
+ * Mirrors macOS Finder's app menu.
  */
 export function buildFallbackAppMenu() {
     return [
         { label: "About MacTop", action: "about-mactop" },
         { type: "separator" },
-        { label: "Open Finder", action: "open-finder" },
-        { label: "Settings", action: "open-settings" },
+        { label: "Settings...", action: "open-settings-ext" },
         { type: "separator" },
-        { label: "Empty Bin...", action: "empty-bin" },
+        { label: "Hide Finder", action: "hide-app" },
+        { label: "Hide Others", action: "hide-others" },
+        { label: "Show All", action: "show-all" },
+        { type: "separator" },
+        { label: "Empty Trash...", action: "empty-bin" },
     ];
 }

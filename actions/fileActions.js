@@ -27,4 +27,11 @@ export const fileActions = {
     'app-details': (ctx, appId) => {
         if (appId) GLib.spawn_command_line_async(`gnome-software --details=${appId}`);
     },
+
+    'about-mactop': () => {
+        Gio.AppInfo.launch_default_for_uri(
+            'https://github.com/anorak999/MacTop',
+            global.create_app_launch_context(0, -1)
+        );
+    },
 };

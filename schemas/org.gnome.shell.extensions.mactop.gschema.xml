@@ -6,5 +6,10 @@
       <summary>Show Indicator</summary>
       <description>Toggle the MacTop indicator visibility.</description>
     </key>
+    <key name="app-blacklist" type="as">
+      <default>['gjs', 'org.gnome.gjs', 'gnome-shell', 'mutter', 'nautilus', 'org.gnome.nautilus']</default>
+      <summary>Application Blacklist</summary>
+      <description>List of app names, IDs, or WM classes to hide from the menu bar.</description>
+    </key>
   </schema>
 </schemalist>

@@ -8,8 +8,6 @@ export function buildFileMenu() {
         { label: "Print", action: "print" },
         { type: "separator" },
         { label: "Get Info", action: "properties" },
-        { label: "Compress", action: "compress" },
-        { label: "Duplicate", action: "duplicate" },
         { type: "separator" },
         { label: "Move to Trash", action: "delete-item" },
         { type: "separator" },

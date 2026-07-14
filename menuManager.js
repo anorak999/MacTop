@@ -68,11 +68,15 @@ const TopLevelMenuButton = GObject.registerClass(
 );
 
 export class MenuManager {
-    constructor(uuid) {
+    constructor(uuid, settings) {
         this.uuid = uuid;
+        this._settings = settings;
         this._buttons = [];
         this._timeoutIds = [];
-        this._blacklist = ['gjs', 'org.gnome.gjs', 'gnome-shell', 'mutter', 'nautilus', 'org.gnome.nautilus'];
+    }
+
+    get _blacklist() {
+        return this._settings ? this._settings.get_strv('app-blacklist') : [];
     }
 
     updateMenuForWindow(window) {

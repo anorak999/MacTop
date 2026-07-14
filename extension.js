@@ -14,7 +14,7 @@ export default class MacTopExtension extends Extension {
         this._settings = this.getSettings('org.gnome.shell.extensions.mactop');
         
         const uuid = this.metadata.uuid || 'mactop@anorak';
-        this._menuManager = new MenuManager(uuid);
+        this._menuManager = new MenuManager(uuid, this._settings);
 
         let initialWindow = global.display.get_focus_window();
         this._menuManager.updateMenuForWindow(initialWindow);

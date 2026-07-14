@@ -60,13 +60,20 @@ function simulateNativeOpenWith(virtualDevice, manager) {
 /**
  * Try to execute a keyboard shortcut action.
  * Returns true if handled, false if the action is not a keyboard action.
+ *
+ * Uses the cached virtual device from MenuManager when available,
+ * falling back to creating a new one if no manager is provided.
  */
 export function executeKeyboardAction(action, manager) {
+    const vd = manager ? manager.getVirtualDevice() : null;
+
     if (action === 'native-open-with') {
         try {
-            const seat = Clutter.get_default_backend().get_default_seat();
-            const vd = seat.create_virtual_device(Clutter.InputDeviceType.KEYBOARD_DEVICE);
-            if (vd) simulateNativeOpenWith(vd, manager);
+            const device = vd || (() => {
+                const seat = Clutter.get_default_backend().get_default_seat();
+                return seat.create_virtual_device(Clutter.InputDeviceType.KEYBOARD_DEVICE);
+            })();
+            if (device) simulateNativeOpenWith(device, manager);
             return true;
         } catch (e) {
             console.error(`[mactop] Virtual keyboard error: ${e}`);
@@ -78,9 +85,11 @@ export function executeKeyboardAction(action, manager) {
     if (!entry) return false;
 
     try {
-        const seat = Clutter.get_default_backend().get_default_seat();
-        const vd = seat.create_virtual_device(Clutter.InputDeviceType.KEYBOARD_DEVICE);
-        if (vd) simulateShortcut(vd, entry[0], entry[1], entry[2]);
+        const device = vd || (() => {
+            const seat = Clutter.get_default_backend().get_default_seat();
+            return seat.create_virtual_device(Clutter.InputDeviceType.KEYBOARD_DEVICE);
+        })();
+        if (device) simulateShortcut(device, entry[0], entry[1], entry[2]);
         return true;
     } catch (e) {
         console.error(`[mactop] Virtual keyboard error: ${e}`);

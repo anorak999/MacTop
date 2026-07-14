@@ -5,7 +5,7 @@ import Gtk from 'gi://Gtk';
 
 export default class MacTopPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
-        const settings = this.getSettings();
+        const settings = this.getSettings('org.gnome.shell.extensions.mactop');
 
         // --- General page ---
         const generalPage = new Adw.PreferencesPage({

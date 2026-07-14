@@ -2,11 +2,11 @@ import GObject from 'gi://GObject';
 import St from 'gi://St';
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
-import Gio from 'gi://Gio';
 import Shell from 'gi://Shell';
 import * as PanelMenu from "resource:///org/gnome/shell/ui/panelMenu.js";
 import * as PopupMenu from "resource:///org/gnome/shell/ui/popupMenu.js";
 import * as Main from "resource:///org/gnome/shell/ui/main.js";
+import { dispatch } from './actions/dispatcher.js';
 
 const TopLevelMenuButton = GObject.registerClass(
   class TopLevelMenuButton extends PanelMenu.Button {
@@ -26,187 +26,12 @@ const TopLevelMenuButton = GObject.registerClass(
     }
 
     _executeNativeAction(action) {
-        let display = global.display;
-        let window = display.get_focus_window();
-
-        if (action === "close") {
-            if (window) window.delete(global.get_current_time());
-            return true;
-        } else if (action === "minimize") {
-            if (window) window.minimize();
-            return true;
-        } else if (action === "maximize") {
-            if (window) {
-                if (window.is_maximized()) window.unmaximize();
-                else window.maximize();
-            }
-            return true;
-        }
-
-        if (action.startsWith("activate-window:")) {
-            let winId = action.split(":")[1];
-            if (this._appInstance) {
-                let appWindows = this._appInstance.get_windows();
-                let targetWin = appWindows.find(w => w.get_id().toString() === winId);
-                if (targetWin) {
-                    targetWin.activate(global.get_current_time());
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        if (action === "new-app-window") {
-            if (this._appInstance) {
-                this._appInstance.open_new_window(-1);
-                return true;
-            }
-            return false;
-        }
-
-        if (action.startsWith("app-details:")) {
-            let appId = action.split(":")[1];
-            if (appId) {
-                GLib.spawn_command_line_async(`gnome-software --details=${appId}`);
-                return true;
-            }
-        }
-
-        try {
-            if (action === "open-finder" || action === "new-finder-win" || action === "go-home") {
-                GLib.spawn_command_line_async(`xdg-open ${GLib.get_home_dir()}`);
-                return true;
-            } else if (action === "new-folder") {
-                GLib.spawn_command_line_async(`mkdir -p ${GLib.get_home_dir()}/Desktop/'Untitled Folder'`);
-                return true;
-            } else if (action === "open-settings") {
-                GLib.spawn_command_line_async("gnome-control-center");
-                return true;
-            } else if (action === "empty-bin") {
-                GLib.spawn_command_line_async("gio trash --empty");
-                return true;
-            } else if (action === "open-system-help") {
-                GLib.spawn_command_line_async("yelp");
-                return true;
-            } else if (action === "send-feedback") {
-                Gio.AppInfo.launch_default_for_uri(
-                    'https://github.com/anorak/MacTop',
-                    global.create_app_launch_context(0, -1)
-                );
-                return true;
-            } else if (action === "go-recents") {
-                GLib.spawn_command_line_async("xdg-open recent:///");
-                return true;
-            } else if (action === "go-documents") {
-                let path = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOCUMENTS) || `${GLib.get_home_dir()}/Documents`;
-                GLib.spawn_command_line_async(`xdg-open "${path}"`);
-                return true;
-            } else if (action === "go-desktop") {
-                let path = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DESKTOP) || `${GLib.get_home_dir()}/Desktop`;
-                GLib.spawn_command_line_async(`xdg-open "${path}"`);
-                return true;
-            } else if (action === "go-downloads") {
-                let path = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD) || `${GLib.get_home_dir()}/Downloads`;
-                GLib.spawn_command_line_async(`xdg-open "${path}"`);
-                return true;
-            }
-        } catch (e) {
-            console.error(`[mactop] Process execution error: ${e}`);
-        }
-
-        try {
-            let seat = Clutter.get_default_backend().get_default_seat();
-            let virtualDevice = seat.create_virtual_device(Clutter.InputDeviceType.KEYBOARD_DEVICE);
-            
-            if (virtualDevice) {
-                if (action === "native-open-with") {
-                    let timeUs = GLib.get_monotonic_time();
-                    let shiftScanCode = 42; // Shift key
-                    let f10ScanCode = 68;   // F10 key
-                    let hScanCode = 35;     // 'h' key for mnemonic shortcut
-
-                    // 1. Open context right-click popup menu on selection
-                    virtualDevice.notify_key(timeUs, shiftScanCode, Clutter.KeyState.PRESSED);
-                    virtualDevice.notify_key(timeUs + 10, f10ScanCode, Clutter.KeyState.PRESSED);
-                    virtualDevice.notify_key(timeUs + 20, f10ScanCode, Clutter.KeyState.RELEASED);
-                    virtualDevice.notify_key(timeUs + 30, shiftScanCode, Clutter.KeyState.RELEASED);
-
-                    // 2. Track the timeout source ID to clear on extension disable
-                    let timeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 150, () => {
-                        let timeNow = GLib.get_monotonic_time();
-                        virtualDevice.notify_key(timeNow, hScanCode, Clutter.KeyState.PRESSED);
-                        virtualDevice.notify_key(timeNow + 10, hScanCode, Clutter.KeyState.RELEASED);
-                        
-                        if (this._menuManagerInstance) {
-                            this._menuManagerInstance._timeoutIds = this._menuManagerInstance._timeoutIds.filter(id => id !== timeoutId);
-                        }
-                        return GLib.SOURCE_REMOVE;
-                    });
-                    
-                    if (this._menuManagerInstance) {
-                        this._menuManagerInstance._timeoutIds.push(timeoutId);
-                    }
-                    
-                    return true;
-                }
-
-                let modifierScanCode = 29; // Ctrl
-                let actionScanCode = 0;
-                let useModifier = true;
-                
-                if (action === "copy") actionScanCode = 46;       
-                else if (action === "paste") actionScanCode = 47;  
-                else if (action === "cut") actionScanCode = 45;    
-                else if (action === "undo") actionScanCode = 44;   
-                else if (action === "redo") actionScanCode = 21;   
-                else if (action === "select-all") actionScanCode = 30; 
-                else if (action === "new-tab") actionScanCode = 28;    
-                else if (action === "print") actionScanCode = 25; // Ctrl + P
-                else if (action === "emoji-picker") actionScanCode = 52; // Ctrl + . (Period)
-                else if (action === "toggle-fullscreen") {
-                    useModifier = false;
-                    actionScanCode = 87; // F11 key
-                }
-                else if (action === "go-back") {
-                    modifierScanCode = 56; 
-                    actionScanCode = 105;  
-                }
-                else if (action === "go-forward") {
-                    modifierScanCode = 56; 
-                    actionScanCode = 106;  
-                }
-                else if (action === "delete-item") {
-                    useModifier = false;
-                    actionScanCode = 111; // Delete key
-                }
-                else if (action === "virtual-open") {
-                    useModifier = false;
-                    actionScanCode = 28;   
-                }
-                else if (action === "properties") {
-                    modifierScanCode = 56; // Alt + Enter (Get Info)
-                    actionScanCode = 28;   
-                }
-
-                if (actionScanCode !== 0) {
-                    let timeUs = GLib.get_monotonic_time();
-                    if (useModifier) {
-                        virtualDevice.notify_key(timeUs, modifierScanCode, Clutter.KeyState.PRESSED);
-                        virtualDevice.notify_key(timeUs + 10, actionScanCode, Clutter.KeyState.PRESSED);
-                        virtualDevice.notify_key(timeUs + 20, actionScanCode, Clutter.KeyState.RELEASED);
-                        virtualDevice.notify_key(timeUs + 30, modifierScanCode, Clutter.KeyState.RELEASED);
-                    } else {
-                        virtualDevice.notify_key(timeUs, actionScanCode, Clutter.KeyState.PRESSED);
-                        virtualDevice.notify_key(timeUs + 10, actionScanCode, Clutter.KeyState.RELEASED);
-                    }
-                    return true;
-                }
-            }
-        } catch (e) {
-            console.error(`[mactop] Virtual Keyboard error: ${e}`);
-        }
-
-        return false;
+        const ctx = {
+            window: global.display.get_focus_window(),
+            app: this._appInstance,
+            desktopId: '',
+        };
+        return dispatch(action, ctx, this._menuManagerInstance);
     }
 
     _buildSubMenu(menuItems, parentMenu) {

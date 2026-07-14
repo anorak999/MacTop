@@ -30,20 +30,23 @@ export function buildAppMenu(appName, detectedApp) {
     return children;
 }
 
+// Cached fallback menu — computed once, never changes
+const FALLBACK_MENU = [
+    { label: "About MacTop", action: "about-mactop" },
+    { type: "separator" },
+    { label: "Settings...", action: "open-settings-ext" },
+    { type: "separator" },
+    { label: "Hide Finder", action: "hide-app" },
+    { label: "Hide Others", action: "hide-others" },
+    { label: "Show All", action: "show-all" },
+    { type: "separator" },
+    { label: "Empty Trash...", action: "empty-bin" },
+];
+
 /**
  * Build the fallback app menu when no app is focused (desktop/Finder state).
  * Mirrors macOS Finder's app menu.
  */
 export function buildFallbackAppMenu() {
-    return [
-        { label: "About MacTop", action: "about-mactop" },
-        { type: "separator" },
-        { label: "Settings...", action: "open-settings-ext" },
-        { type: "separator" },
-        { label: "Hide Finder", action: "hide-app" },
-        { label: "Hide Others", action: "hide-others" },
-        { label: "Show All", action: "show-all" },
-        { type: "separator" },
-        { label: "Empty Trash...", action: "empty-bin" },
-    ];
+    return FALLBACK_MENU;
 }

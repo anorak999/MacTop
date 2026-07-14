@@ -1,31 +1,32 @@
-import GLib from 'gi://GLib';
+import Gio from 'gi://Gio';
 
 const NAUTILUS_PREFS = 'org.gnome.nautilus.preferences';
+const _settings = new Gio.Settings({ schema_id: NAUTILUS_PREFS });
 
-function gsettingsSet(schema, key, value) {
+function gsettingsSet(key, value) {
     try {
-        GLib.spawn_command_line_async(`gsettings set ${schema} ${key} "${value}"`);
+        _settings.set_string(key, value);
     } catch (e) {
         console.error(`[mactop] gsettings error: ${e}`);
     }
 }
 
-function gsettingsToggle(schema, key) {
+function gsettingsToggle(key) {
     try {
-        GLib.spawn_command_line_async(`gsettings set ${schema} ${key} !$(gsettings get ${schema} ${key})`);
+        _settings.set_boolean(key, !_settings.get_boolean(key));
     } catch (e) {
         console.error(`[mactop] gsettings error: ${e}`);
     }
 }
 
 export const viewActions = {
-    'nautilus-icon-view': () => gsettingsSet(NAUTILUS_PREFS, 'default-folder-viewer', 'icon-view'),
-    'nautilus-list-view': () => gsettingsSet(NAUTILUS_PREFS, 'default-folder-viewer', 'list-view'),
-    'nautilus-sort-name': () => gsettingsSet(NAUTILUS_PREFS, 'default-sort-order', 'name'),
-    'nautilus-sort-date': () => gsettingsSet(NAUTILUS_PREFS, 'default-sort-order', 'mtime'),
-    'nautilus-sort-size': () => gsettingsSet(NAUTILUS_PREFS, 'default-sort-order', 'size'),
-    'nautilus-sort-type': () => gsettingsSet(NAUTILUS_PREFS, 'default-sort-order', 'type'),
-    'nautilus-reverse-sort': () => gsettingsToggle(NAUTILUS_PREFS, 'default-sort-in-reverse-order'),
-    'nautilus-toggle-path-bar': () => gsettingsToggle(NAUTILUS_PREFS, 'always-use-location-entry'),
-    'nautilus-toggle-hidden': () => gsettingsToggle(NAUTILUS_PREFS, 'show-hidden-files'),
+    'nautilus-icon-view': () => gsettingsSet('default-folder-viewer', 'icon-view'),
+    'nautilus-list-view': () => gsettingsSet('default-folder-viewer', 'list-view'),
+    'nautilus-sort-name': () => gsettingsSet('default-sort-order', 'name'),
+    'nautilus-sort-date': () => gsettingsSet('default-sort-order', 'mtime'),
+    'nautilus-sort-size': () => gsettingsSet('default-sort-order', 'size'),
+    'nautilus-sort-type': () => gsettingsSet('default-sort-order', 'type'),
+    'nautilus-reverse-sort': () => gsettingsToggle('default-sort-in-reverse-order'),
+    'nautilus-toggle-path-bar': () => gsettingsToggle('always-use-location-entry'),
+    'nautilus-toggle-hidden': () => gsettingsToggle('show-hidden-files'),
 };

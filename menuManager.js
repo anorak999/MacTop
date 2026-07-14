@@ -168,21 +168,14 @@ export class MenuManager {
         this._cachedBlacklist = null;
         this._cachedBlacklistLower = null;
 
-        // System menu icon — read from settings or auto-detect
-        this._cachedMenuIcon = null;
+        // Auto-detected distro icon (computed once, used as fallback)
+        this._distroIcon = detectDistroIcon();
     }
 
     get _menuIcon() {
-        if (this._cachedMenuIcon !== null) return this._cachedMenuIcon;
-        if (this._settings) {
-            const setting = this._settings.get_string('menu-icon');
-            if (setting && setting.length > 0) {
-                this._cachedMenuIcon = setting;
-                return this._cachedMenuIcon;
-            }
-        }
-        this._cachedMenuIcon = detectDistroIcon();
-        return this._cachedMenuIcon;
+        if (!this._settings) return this._distroIcon;
+        const setting = this._settings.get_string('menu-icon');
+        return (setting && setting.length > 0) ? setting : this._distroIcon;
     }
 
     get _blacklist() {

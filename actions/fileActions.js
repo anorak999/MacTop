@@ -1,8 +1,8 @@
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 
-const home = () => GLib.get_home_dir();
-const specialDir = (d) => GLib.get_user_special_dir(d) || `${home()}/${d === GLib.UserDirectory.DIRECTORY_DOCUMENTS ? 'Documents' : d === GLib.UserDirectory.DIRECTORY_DESKTOP ? 'Desktop' : 'Downloads'}`;
+const HOME = GLib.get_home_dir();
+const specialDir = (d) => GLib.get_user_special_dir(d) || `${HOME}/${d === GLib.UserDirectory.DIRECTORY_DOCUMENTS ? 'Documents' : d === GLib.UserDirectory.DIRECTORY_DESKTOP ? 'Desktop' : 'Downloads'}`;
 
 export const fileActions = {
     // Apple Menu
@@ -19,21 +19,19 @@ export const fileActions = {
 
     // Finder Menu
     'open-settings-ext': () => GLib.spawn_command_line_async('gnome-extensions prefs mactop@anorak'),
-    'hide-app': () => GLib.spawn_command_line_async('gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell --method org.gnome.Shell.Eval "global.get_window_actors().filter(a => a.meta_window.has_focus()).forEach(a => a.meta_window.minimize())" 2>/dev/null'),
-    'hide-others': () => GLib.spawn_command_line_async('gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell --method org.gnome.Shell.Eval "global.get_window_actors().filter(a => !a.meta_window.has_focus() && !a.meta_window.is_skip_taskbar()).forEach(a => a.meta_window.minimize())" 2>/dev/null'),
-    'show-all': () => GLib.spawn_command_line_async('gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell --method org.gnome.Shell.Eval "global.get_window_actors().forEach(a => { if (a.meta_window.is_minimized()) a.meta_window.activate(global.get_current_time()); })" 2>/dev/null'),
+    // hide-app, hide-others, show-all — moved to windowActions.js (direct JS eval)
 
     // File Menu
-    'open-finder': () => GLib.spawn_command_line_async(`xdg-open ${home()}`),
-    'new-finder-win': () => GLib.spawn_command_line_async(`xdg-open ${home()}`),
-    'new-folder': () => GLib.spawn_command_line_async(`mkdir -p ${home()}/Desktop/'Untitled Folder'`),
+    'open-finder': () => GLib.spawn_command_line_async(`xdg-open ${HOME}`),
+    'new-finder-win': () => GLib.spawn_command_line_async(`xdg-open ${HOME}`),
+    'new-folder': () => GLib.spawn_command_line_async(`mkdir -p ${HOME}/Desktop/'Untitled Folder'`),
     'open-settings': () => GLib.spawn_command_line_async('gnome-control-center'),
     'empty-bin': () => GLib.spawn_command_line_async('gio trash --empty'),
     'find': () => GLib.spawn_command_line_async('gnome-search-tool'),
     'eject': () => GLib.spawn_command_line_async('udisksctl power-off --no-user-interaction'),
 
     // Go Menu
-    'go-home': () => GLib.spawn_command_line_async(`xdg-open ${home()}`),
+    'go-home': () => GLib.spawn_command_line_async(`xdg-open ${HOME}`),
     'go-recents': () => GLib.spawn_command_line_async('xdg-open recent:///'),
     'go-documents': () => GLib.spawn_command_line_async(`xdg-open "${specialDir(GLib.UserDirectory.DIRECTORY_DOCUMENTS)}"`),
     'go-desktop': () => GLib.spawn_command_line_async(`xdg-open "${specialDir(GLib.UserDirectory.DIRECTORY_DESKTOP)}"`),
@@ -46,10 +44,7 @@ export const fileActions = {
     // Help
     'open-system-help': () => GLib.spawn_command_line_async('yelp'),
 
-    // Window
-    'tile-left': () => GLib.spawn_command_line_async('gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell --method org.gnome.Shell.Eval "global.get_window_actors().find(a => a.meta_window.has_focus())?.meta_window.move_to_monitor(0)" 2>/dev/null'),
-    'tile-right': () => GLib.spawn_command_line_async('gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell --method org.gnome.Shell.Eval "global.get_window_actors().find(a => a.meta_window.has_focus())?.meta_window.move_to_monitor(1)" 2>/dev/null'),
-    'bring-all-front': () => GLib.spawn_command_line_async('wmctrl -r :ACTIVE: -b add,above'),
+    // Window — tile-left, tile-right, bring-all-front moved to windowActions.js
 
     // Feedback
     'send-feedback': () => {

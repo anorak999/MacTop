@@ -24,4 +24,51 @@ export const windowActions = {
     'new-app-window': (ctx) => {
         if (ctx.app) ctx.app.open_new_window(-1);
     },
+
+    // Direct JS eval — runs inside GNOME Shell, no gdbus fork+exec
+    'hide-app': () => {
+        const actors = global.get_window_actors();
+        actors.forEach(a => {
+            if (a.meta_window.has_focus()) a.meta_window.minimize();
+        });
+    },
+
+    'hide-others': () => {
+        const actors = global.get_window_actors();
+        actors.forEach(a => {
+            if (!a.meta_window.has_focus() && !a.meta_window.is_skip_taskbar()) {
+                a.meta_window.minimize();
+            }
+        });
+    },
+
+    'show-all': () => {
+        const actors = global.get_window_actors();
+        actors.forEach(a => {
+            if (a.meta_window.is_minimized()) {
+                a.meta_window.activate(global.get_current_time());
+            }
+        });
+    },
+
+    'tile-left': () => {
+        const actors = global.get_window_actors();
+        const focused = actors.find(a => a.meta_window.has_focus());
+        if (focused) focused.meta_window.move_to_monitor(0);
+    },
+
+    'tile-right': () => {
+        const actors = global.get_window_actors();
+        const focused = actors.find(a => a.meta_window.has_focus());
+        if (focused) focused.meta_window.move_to_monitor(1);
+    },
+
+    'bring-all-front': () => {
+        const actors = global.get_window_actors();
+        actors.forEach(a => {
+            if (a.meta_window.is_minimized()) {
+                a.meta_window.activate(global.get_current_time());
+            }
+        });
+    },
 };

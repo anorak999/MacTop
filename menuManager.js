@@ -17,45 +17,48 @@ import { buildGoMenu } from './menus/goMenu.js';
 import { buildWindowMenu } from './menus/windowMenu.js';
 import { buildHelpMenu } from './menus/helpMenu.js';
 
-// Distro icon map — common Linux distros
+// Distro icon map — uses distributor-logo-* icon names from GTK icon theme
 const DISTRO_ICONS = {
-    'debian':     '.debian-logo',
-    'ubuntu':     'ubuntu-logo',
-    'fedora':     'fedora-logo',
-    'arch':       'archlinux-logo',
-    'manjaro':    'manjaro-logo',
-    'opensuse':   'opensuse-logo',
-    'centos':     'centos-logo',
-    'rhel':       'rhel-logo',
-    'alpine':     'alpine-logo',
-    'mint':       'linuxmint-logo',
-    'pop':        'pop-logo',
-    'elementary': 'elementary-logo',
-    'garuda':     'garuda-logo',
-    'nixos':      'nixos-logo',
-    'void':       'void-logo',
-    'gentoo':     'gentoo-logo',
-    'slackware':  'slackware-logo',
-    'solus':      'solus-logo',
-    'zorin':      'zorin-logo',
-    'endeavour':  'endeavour-logo',
-    'nobara':     'nobara-logo',
+    'debian':     'distributor-logo-debian',
+    'ubuntu':     'distributor-logo-ubuntu-mate',
+    'fedora':     'distributor-logo-fedora',
+    'arch':       'distributor-logo-archlinux',
+    'manjaro':    'distributor-logo-manjaro',
+    'opensuse':   'distributor-logo-opensuse',
+    'centos':     'distributor-logo-rhel',
+    'rhel':       'distributor-logo-rhel',
+    'alpine':     'distributor-logo-alpine',
+    'mint':       'distributor-logo-linux-mint',
+    'pop':        'distributor-logo-pop-os',
+    'elementary': 'distributor-logo-elementary',
+    'garuda':     'distributor-logo-archlinux',
+    'nixos':      'distributor-logo-nixos',
+    'void':       'distributor-logo-void',
+    'gentoo':     'distributor-logo-gentoo',
+    'slackware':  'distributor-logo-archlinux',
+    'solus':      'distributor-logo-solus',
+    'zorin':      'distributor-logo-zorin',
+    'endeavour':  'distributor-logo-endeavouros',
+    'nobara':     'distributor-logo-fedora',
+    'kali':       'distributor-logo-kali-linux',
+    'deepin':     'distributor-logo-deepin',
+    'devuan':     'distributor-logo-devuan',
 };
 
 function detectDistroIcon() {
     try {
         const [ok, contents] = GLib.file_get_contents('/etc/os-release');
-        if (!ok) return 'debian-logo';
+        if (!ok) return 'distributor-logo-debian';
         const text = new TextDecoder().decode(contents);
         const idMatch = text.match(/^ID=(.+)$/m);
         if (idMatch) {
             const id = idMatch[1].replace(/"/g, '').trim().toLowerCase();
-            return DISTRO_ICONS[id] || 'debian-logo';
+            return DISTRO_ICONS[id] || 'distributor-logo-debian';
         }
     } catch (e) {
         // fallback
     }
-    return 'debian-logo';
+    return 'distributor-logo-debian';
 }
 
 // Apple Menu — always present, computed once
@@ -79,15 +82,27 @@ const TopLevelMenuButton = GObject.registerClass(
       super._init(0.0, label);
       this._appInstance = appInstance;
       this._menuManagerInstance = menuManagerInstance;
+      this._isIcon = false;
 
-      let title = new St.Label({
-          text: label,
-          y_align: Clutter.ActorAlign.CENTER,
-          style_class: 'panel-button-label'
-      });
-      this.add_child(title);
+      // Determine if label is an icon name (e.g. distributor-logo-*)
+      if (label && (label.includes('distributor-logo') || label.includes('-logo'))) {
+        this._isIcon = true;
+        let icon = new St.Icon({
+            icon_name: label,
+            style_class: 'system-status-icon',
+        });
+        this.add_child(icon);
+        this._titleWidget = icon;
+      } else {
+        let title = new St.Label({
+            text: label,
+            y_align: Clutter.ActorAlign.CENTER,
+            style_class: 'panel-button-label'
+        });
+        this.add_child(title);
+        this._titleWidget = title;
+      }
 
-      this._titleWidget = title;
       this._buildSubMenu(children, this.menu);
     }
 
@@ -100,6 +115,10 @@ const TopLevelMenuButton = GObject.registerClass(
     }
 
     updateLabel(label) {
+        if (this._isIcon) {
+            // Icon buttons don't change label
+            return;
+        }
         this._titleWidget.set_text(label);
     }
 

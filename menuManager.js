@@ -8,12 +8,16 @@ import * as PopupMenu from "resource:///org/gnome/shell/ui/popupMenu.js";
 import * as Main from "resource:///org/gnome/shell/ui/main.js";
 import { dispatch } from './actions/dispatcher.js';
 import { buildAppMenu, buildFallbackAppMenu } from './menus/appMenu.js';
+import { buildAppleMenu } from './menus/appleMenu.js';
 import { buildFileMenu } from './menus/fileMenu.js';
 import { buildEditMenu } from './menus/editMenu.js';
 import { buildViewMenu } from './menus/viewMenu.js';
 import { buildGoMenu } from './menus/goMenu.js';
 import { buildWindowMenu } from './menus/windowMenu.js';
 import { buildHelpMenu } from './menus/helpMenu.js';
+
+// Apple Menu — always present, computed once
+const APPLE_MENU = { label: "\uF8FF", children: buildAppleMenu() };
 
 // Static menus — computed once, never change
 const STATIC_MENUS = [
@@ -25,7 +29,7 @@ const STATIC_MENUS = [
     { label: "Help",   children: buildHelpMenu() },
 ];
 
-const MENU_SLOT_COUNT = 7; // app + 6 static
+const MENU_SLOT_COUNT = 8; // apple + app + 6 static
 
 const TopLevelMenuButton = GObject.registerClass(
   class TopLevelMenuButton extends PanelMenu.Button {
@@ -181,6 +185,7 @@ export class MenuManager {
             : buildFallbackAppMenu();
 
         const newMenuData = [
+            APPLE_MENU,
             { label: appName, children: appChildren },
             ...STATIC_MENUS,
         ];

@@ -8,8 +8,12 @@ export function buildFileMenu() {
         { label: "Print", action: "print" },
         { type: "separator" },
         { label: "Get Info", action: "properties" },
+        { label: "Rename", action: "rename-file" },
+        { type: "separator" },
+        { label: "Find", action: "find" },
         { type: "separator" },
         { label: "Move to Trash", action: "delete-item" },
+        { label: "Eject", action: "eject" },
         { type: "separator" },
         { label: "Close Window", action: "close" },
     ];

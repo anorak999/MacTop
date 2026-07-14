@@ -20,6 +20,7 @@ const SHORTCUT_MAP = {
     'delete-item':      [0, SC.KEY_DELETE, false],
     'virtual-open':     [0, SC.KEY_ENTER, false],
     'properties':       [SC.KEY_ALT, SC.KEY_ENTER, true],
+    'rename-file':      [0, SC.KEY_F2, false],
 };
 
 function sendKey(virtualDevice, timeUs, scanCode, state) {

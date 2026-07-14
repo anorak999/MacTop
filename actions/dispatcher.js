@@ -1,5 +1,6 @@
 import { windowActions } from './windowActions.js';
 import { fileActions } from './fileActions.js';
+import { viewActions } from './viewActions.js';
 import { executeKeyboardAction } from './keyboardActions.js';
 
 /**
@@ -13,7 +14,7 @@ import { executeKeyboardAction } from './keyboardActions.js';
  * Actions that are virtual-keyboard shortcuts are handled by keyboardActions
  * as a fallback, so they don't need entries here.
  */
-const registry = { ...windowActions, ...fileActions };
+const registry = { ...windowActions, ...fileActions, ...viewActions };
 
 /**
  * Dispatch an action string.

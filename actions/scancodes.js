@@ -5,6 +5,7 @@ export const KEY_CTRL = 29;
 export const KEY_SHIFT = 42;
 export const KEY_ALT = 56;
 export const KEY_DELETE = 111;
+export const KEY_F2 = 60;   // rename
 export const KEY_F10 = 68;
 export const KEY_F11 = 87;
 

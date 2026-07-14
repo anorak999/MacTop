@@ -1,0 +1,15 @@
+{
+  "uuid": "mactop@anorak",
+  "name": "MacTop",
+  "description": "A macOS-inspired global menu for GNOME, bringing a clean top panel with application menus, window actions, navigation controls, and quick-access shortcuts.",
+  "version": 1,
+  "shell-version": [
+    "45",
+    "46",
+    "47",
+    "48",
+    "49",
+    "50"
+  ],
+  "url": "https://github.com/anorak/MacTop"
+}

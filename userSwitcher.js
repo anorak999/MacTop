@@ -147,6 +147,13 @@ export const UserSwitcherButton = GObject.registerClass(
             });
             this.add_child(this._buttonIcon);
 
+            this._usernameLabel = new St.Label({
+                text: GLib.get_user_name(),
+                style_class: 'panel-button-label',
+                y_align: Clutter.ActorAlign.CENTER,
+            });
+            this.add_child(this._usernameLabel);
+
             if (this.menu?.actor) {
                 this.menu.actor.add_style_class_name('mactop-user-switcher-menu');
                 this.menu.actor.set_x_align(Clutter.ActorAlign.END);
@@ -182,6 +189,7 @@ export const UserSwitcherButton = GObject.registerClass(
             this._loginManagerProxy = null;
             this._loginManagerProxyPromise = null;
             this._userManager = null;
+            this._usernameLabel = null;
             this._extension = null;
 
             super.destroy();
@@ -532,6 +540,7 @@ export const UserSwitcherButton = GObject.registerClass(
         _updatePanelIcon(_users, _currentUserName) {
             this._buttonIcon.gicon = null;
             this._buttonIcon.icon_name = DEFAULT_BUTTON_ICON;
+            this._usernameLabel.text = _currentUserName;
         }
     }
 );

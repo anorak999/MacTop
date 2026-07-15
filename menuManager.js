@@ -144,12 +144,25 @@ const TopLevelMenuButton = GObject.registerClass(
       this._buildSubMenu(children, this.menu);
     }
 
-    _executeNativeAction(action) {
-        const ctx = {
-            window: global.display.get_focus_window(),
-            app: this._appInstance,
-        };
-        return dispatch(action, ctx, this._menuManagerInstance);
+    _executeNativeAction(action, closeMenu = true) {
+        // Close the menu first to return focus to the previous window
+        if (closeMenu && this.menu) {
+            this.menu.close(true);
+        }
+
+        // Give a brief moment for focus to return to Nautilus
+        const timeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
+            const ctx = {
+                window: global.display.get_focus_window(),
+                app: this._appInstance,
+            };
+            dispatch(action, ctx, this._menuManagerInstance);
+            return GLib.SOURCE_REMOVE;
+        });
+
+        if (this._menuManagerInstance) {
+            this._menuManagerInstance._timeoutIds.push(timeoutId);
+        }
     }
 
     updateLabel(label) {
@@ -185,7 +198,7 @@ const TopLevelMenuButton = GObject.registerClass(
           const menuItem = new PopupMenu.PopupMenuItem(item.label);
           if (item.action) {
             menuItem.connect("activate", () => {
-              this._executeNativeAction(item.action);
+              this._executeNativeAction(item.action, true);
             });
           }
           parentMenu.addMenuItem(menuItem);

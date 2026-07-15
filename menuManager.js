@@ -151,7 +151,7 @@ const TopLevelMenuButton = GObject.registerClass(
         }
 
         // Give a brief moment for focus to return to Nautilus
-        const timeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
+        const timeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 150, () => {
             const ctx = {
                 window: global.display.get_focus_window(),
                 app: this._appInstance,
@@ -192,7 +192,8 @@ const TopLevelMenuButton = GObject.registerClass(
           this._buildSubMenu(item.children, subMenu.menu);
           parentMenu.addMenuItem(subMenu);
         } else if (item.type === "recent-submenu") {
-          const recentSubmenu = new RecentItemsSubmenu(item.label, parentMenu);
+          const recentMenuManager = this._menuManagerInstance?._recentMenuManager ?? null;
+          const recentSubmenu = new RecentItemsSubmenu(item.label, parentMenu, recentMenuManager);
           parentMenu.addMenuItem(recentSubmenu);
         } else {
           const menuItem = new PopupMenu.PopupMenuItem(item.label);
@@ -214,6 +215,7 @@ export class MenuManager {
         this._settings = settings;
         this._buttons = [];
         this._timeoutIds = [];
+        this._recentMenuManager = new PopupMenu.PopupMenuManager(this);
 
         // Virtual keyboard device — created once, reused across all actions
         this._virtualDevice = null;

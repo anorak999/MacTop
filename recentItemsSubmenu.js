@@ -53,7 +53,7 @@ async function loadFileTextAsync(file, cancellable) {
 export const RecentItemsSubmenu = GObject.registerClass(
   { GTypeName: 'MacTopRecentItemsSubmenu' },
   class RecentItemsSubmenu extends PopupMenu.PopupBaseMenuItem {
-    _init(title, parentMenu) {
+    _init(title, parentMenu, recentMenuManager) {
       super._init({
         reactive: true,
         can_focus: true,
@@ -61,6 +61,8 @@ export const RecentItemsSubmenu = GObject.registerClass(
       });
 
       this._parentMenu = parentMenu;
+      this._recentMenuManager = recentMenuManager ?? null;
+      this._managerRegistered = false;
 
     // State tracking
     this._recentMenu = null;
@@ -523,6 +525,11 @@ export const RecentItemsSubmenu = GObject.registerClass(
     Main.layoutManager.addTopChrome(this._recentMenu.actor);
     this._chromeAdded = true;
 
+    if (!this._managerRegistered && this._recentMenuManager) {
+      this._recentMenuManager.addMenu(this._recentMenu);
+      this._managerRegistered = true;
+    }
+
     await this._populateMenu(this._recentMenu);
     if (this._isDestroyed) return this._recentMenu;
     this._connectMainMenuItemSignals();
@@ -679,6 +686,11 @@ export const RecentItemsSubmenu = GObject.registerClass(
 
       if (this._recentMenu.isOpen) {
         this._recentMenu.close(true);
+      }
+
+      if (this._managerRegistered && this._recentMenuManager) {
+        this._recentMenuManager.removeMenu(this._recentMenu);
+        this._managerRegistered = false;
       }
 
       if (this._chromeAdded) {

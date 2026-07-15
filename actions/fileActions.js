@@ -204,60 +204,10 @@ export const fileActions = {
     'open-finder': () => GLib.spawn_command_line_async(`xdg-open ${HOME}`),
     'new-finder-win': () => GLib.spawn_command_line_async(`xdg-open ${HOME}`),
     'new-folder': () => createNewFolder(),
-    'new-tab': () => {
-        // Open a new Nautilus window (Nautilus doesn't support tabs via CLI)
-        GLib.spawn_command_line_async(`xdg-open ${HOME}`);
-    },
-    'open': () => {
-        // Open the currently selected file in Nautilus
-        // Nautilus handles this internally when using keyboard shortcut
-        // For menu, we'll focus the Nautilus window
-        const nautilusWindow = getNautilusWindow();
-        if (nautilusWindow) {
-            nautilusWindow.activate(global.get_current_time());
-        }
-    },
-    'native-open-with': () => {
-        // Open with dialog - Nautilus handles this internally
-        const nautilusWindow = getNautilusWindow();
-        if (nautilusWindow) {
-            nautilusWindow.activate(global.get_current_time());
-        }
-    },
-    'print': () => {
-        // Print - Nautilus handles this internally
-        const nautilusWindow = getNautilusWindow();
-        if (nautilusWindow) {
-            nautilusWindow.activate(global.get_current_time());
-        }
-    },
+
     'open-settings': () => GLib.spawn_command_line_async('gnome-control-center'),
-    'properties': () => {
-        // Get Info / Properties - Nautilus handles this internally
-        const nautilusWindow = getNautilusWindow();
-        if (nautilusWindow) {
-            nautilusWindow.activate(global.get_current_time());
-        }
-    },
-    'rename-file': () => {
-        // Rename - Nautilus handles this internally
-        const nautilusWindow = getNautilusWindow();
-        if (nautilusWindow) {
-            nautilusWindow.activate(global.get_current_time());
-        }
-    },
-    'find': () => {
-        // Find - open Nautilus search
-        GLib.spawn_command_line_async(`xdg-open ${HOME}`);
-    },
     'empty-bin': () => GLib.spawn_command_line_async('gio trash --empty'),
-    'delete-item': () => {
-        // Move to Trash - Nautilus handles this internally
-        const nautilusWindow = getNautilusWindow();
-        if (nautilusWindow) {
-            nautilusWindow.activate(global.get_current_time());
-        }
-    },
+
     'eject': async () => {
         // Eject - show list of removable drives and eject them
         const drives = await getRemovableDrives();

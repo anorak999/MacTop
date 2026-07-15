@@ -64,6 +64,11 @@ export class UserSwitcherController {
     destroy() {
         this._disconnectSignals();
 
+        if (this._fallbackTimeoutId) {
+            GLib.source_remove(this._fallbackTimeoutId);
+            this._fallbackTimeoutId = 0;
+        }
+
         if (this._settings && this._settingsChangedId) {
             this._settings.disconnect(this._settingsChangedId);
             this._settingsChangedId = 0;
@@ -81,7 +86,15 @@ export class UserSwitcherController {
 
     _initUserManager() {
         this._userManager = AccountsService.UserManager.get_default();
-        if (!this._userManager) return;
+        if (!this._userManager) {
+            // UserManager unavailable — show based on setting alone after a brief delay
+            this._fallbackTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 2000, () => {
+                this._fallbackTimeoutId = 0;
+                this._updateVisibility();
+                return GLib.SOURCE_REMOVE;
+            });
+            return;
+        }
 
         this._signals = [
             this._userManager.connect('notify::is-loaded', () => this._updateVisibility()),
@@ -93,6 +106,14 @@ export class UserSwitcherController {
             this._updateVisibility();
         } else {
             this._userManager.list_users();
+            // Fallback: if UserManager doesn't load within 3s, show based on setting
+            this._fallbackTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 3000, () => {
+                this._fallbackTimeoutId = 0;
+                if (!this._userManager?.is_loaded) {
+                    this._updateVisibility();
+                }
+                return GLib.SOURCE_REMOVE;
+            });
         }
     }
 
@@ -109,8 +130,7 @@ export class UserSwitcherController {
             ? this._settings.get_boolean('show-user-switcher')
             : true;
 
-        const realUserCount = countRealUsers(this._userManager);
-        const shouldShow = showSetting && realUserCount > 1;
+        const shouldShow = showSetting;
 
         if (shouldShow && !this._userSwitcher) {
             this._userSwitcher = new UserSwitcherButton(this._extension);

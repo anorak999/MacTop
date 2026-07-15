@@ -75,5 +75,13 @@ export default class MacTopPreferences extends ExtensionPreferences {
         });
         settings.bind('lock-to-focused-app', lockRow, 'active', Gio.SettingsBindFlags.DEFAULT);
         group.add(lockRow);
+
+        // Show user switcher
+        const showUserSwitcherRow = new Adw.SwitchRow({
+            title: 'Show User Switcher',
+            subtitle: 'Show user switcher in the right side of the panel.',
+        });
+        settings.bind('show-user-switcher', showUserSwitcherRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        group.add(showUserSwitcherRow);
     }
 }

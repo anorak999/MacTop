@@ -26,5 +26,10 @@
       <summary>Show OS Icon</summary>
       <description>Show the OS logo icon in the top panel. When hidden, the menu is still accessible but the icon is not displayed.</description>
     </key>
+    <key name="show-user-switcher" type="b">
+      <default>true</default>
+      <summary>Show User Switcher</summary>
+      <description>Show the user switcher button in the top panel for fast user switching. Only visible when multiple user accounts exist.</description>
+    </key>
   </schema>
 </schemalist>

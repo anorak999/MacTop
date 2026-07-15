@@ -30,3 +30,77 @@
     border-radius: 4px;
     max-width: 400px;
 }
+
+/*###############################################*/
+/*          User Switcher Styles                 */
+/*###############################################*/
+.mactop-user-switcher-button {
+    margin-left: 3px;
+    margin-right: 3px;
+}
+
+.mactop-user-switcher-menu {
+    min-width: 300px;
+    padding: 6px 0;
+}
+
+.mactop-user-grid {
+    min-width: 100%;
+    margin: 0 auto;
+}
+
+.mactop-user-item {
+    border-radius: 12px;
+    padding: 12px;
+    margin: 0 12px 0 12px;
+}
+
+.mactop-user-item:hover {
+    background-color: rgba(128, 128, 128, 0.15);
+}
+
+.mactop-user-item-content {
+    align-items: center;
+}
+
+.mactop-user-card-avatar-frame {
+    width: 64px;
+    height: 64px;
+    border-radius: 32px;
+    overflow: hidden;
+    border: 2px solid transparent;
+}
+
+.mactop-user-card-avatar {
+    border-radius: 999px;
+    background-size: cover;
+    background-position: center;
+}
+
+.mactop-user-card-name {
+    font-weight: bold;
+    text-align: center;
+    margin-top: 8px;
+}
+
+.mactop-user-avatar-container {
+    width: 68px;
+    height: 68px;
+}
+
+.mactop-user-session-badge {
+    background-color: -st-accent-color;
+    border-radius: 99px;
+    padding: 3px;
+    font-weight: bold;
+    color: -st-accent-fg-color;
+    border: 1px solid;
+    border-color: lightgray;
+}
+
+.mactop-user-session-badge.current-user {
+    background-color: darkgoldenrod;
+    color: -st-accent-fg-color;
+    border: 1px solid;
+    border-color: lightgray;
+}

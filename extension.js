@@ -1,6 +1,7 @@
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 import GLib from 'gi://GLib';
 import { MenuManager } from './menuManager.js';
+import { UserSwitcherController } from './userSwitcher.js';
 
 const FOCUS_DEBOUNCE_MS = 50;
 
@@ -11,6 +12,7 @@ export default class MacTopExtension extends Extension {
         this._settings = null;
         this._focusTimeoutId = 0;
         this._focusedWindow = null;
+        this._userSwitcherController = null;
     }
 
     enable() {
@@ -28,6 +30,9 @@ export default class MacTopExtension extends Extension {
         global.display.connectObject('notify::focus-window', () => {
             this._scheduleMenuUpdate();
         }, this);
+
+        // User switcher (right side of panel)
+        this._userSwitcherController = new UserSwitcherController(this, this._settings);
     }
 
     _updateMenu(window) {
@@ -85,6 +90,11 @@ export default class MacTopExtension extends Extension {
         if (this._menuManager) {
             this._menuManager.destroy();
             this._menuManager = null;
+        }
+
+        if (this._userSwitcherController) {
+            this._userSwitcherController.destroy();
+            this._userSwitcherController = null;
         }
 
         if (this._settings) {

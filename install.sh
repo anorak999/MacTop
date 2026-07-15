@@ -26,6 +26,7 @@ cp -rv "$SOURCE_DIR/menus" "$EXTENSION_DIR/"
 cp -rv "$SOURCE_DIR/icons" "$EXTENSION_DIR/"
 cp -rv "$SOURCE_DIR/uninstall.sh" "$EXTENSION_DIR/"
 cp -rv "$SOURCE_DIR/schemas" "$EXTENSION_DIR/"
+cp -rv "$SOURCE_DIR/spotlight" "$EXTENSION_DIR/"
 
 echo "Compiling GSettings schemas..."
 glib-compile-schemas "$EXTENSION_DIR/schemas/"

@@ -23,7 +23,9 @@ export default class MacTopPreferences extends ExtensionPreferences {
         const page = new Adw.PreferencesPage();
         window.add(page);
 
+        // General group
         const group = new Adw.PreferencesGroup();
+        group.title = 'General';
         page.add(group);
 
         // Show OS icon
@@ -83,5 +85,57 @@ export default class MacTopPreferences extends ExtensionPreferences {
         });
         settings.bind('show-user-switcher', showUserSwitcherRow, 'active', Gio.SettingsBindFlags.DEFAULT);
         group.add(showUserSwitcherRow);
+
+        // Spotlight group
+        const spotlightGroup = new Adw.PreferencesGroup();
+        spotlightGroup.title = 'Spotlight Search';
+        page.add(spotlightGroup);
+
+        // Show panel icon
+        const showSpotlightIconRow = new Adw.SwitchRow({
+            title: 'Show Spotlight Panel Icon',
+            subtitle: 'Show a search icon in the top panel to toggle Spotlight search.',
+        });
+        settings.bind('spotlight-show-panel-icon', showSpotlightIconRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        spotlightGroup.add(showSpotlightIconRow);
+
+        // Use animations
+        const useAnimationsRow = new Adw.SwitchRow({
+            title: 'Enable Animations',
+            subtitle: 'Smooth open/close animations for the Spotlight overlay.',
+        });
+        settings.bind('spotlight-use-animations', useAnimationsRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        spotlightGroup.add(useAnimationsRow);
+
+        // Blur background
+        const blurBackgroundRow = new Adw.SwitchRow({
+            title: 'Blur Background',
+            subtitle: 'Apply blurred background effect (requires imagemagick).',
+        });
+        settings.bind('spotlight-blur-background', blurBackgroundRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        spotlightGroup.add(blurBackgroundRow);
+
+        // Keybinding
+        const keybindingRow = new Adw.EntryRow({
+            title: 'Keyboard Shortcut',
+        });
+        settings.bind('spotlight-keybinding', keybindingRow, 'text', Gio.SettingsBindFlags.DEFAULT);
+        spotlightGroup.add(keybindingRow);
+
+        // Background color
+        const bgColorRow = new Adw.EntryRow({
+            title: 'Background Color',
+            subtitle: 'CSS rgba format (e.g., rgba(0,0,0,0.8))',
+        });
+        settings.bind('spotlight-background-color', bgColorRow, 'text', Gio.SettingsBindFlags.DEFAULT);
+        spotlightGroup.add(bgColorRow);
+
+        // Panel icon color
+        const iconColorRow = new Adw.EntryRow({
+            title: 'Panel Icon Color',
+            subtitle: 'CSS rgba format (e.g., rgba(255,255,255,1))',
+        });
+        settings.bind('spotlight-panel-icon-color', iconColorRow, 'text', Gio.SettingsBindFlags.DEFAULT);
+        spotlightGroup.add(iconColorRow);
     }
 }

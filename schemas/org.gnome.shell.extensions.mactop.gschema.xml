@@ -31,5 +31,36 @@
       <summary>Show User Switcher</summary>
       <description>Show the user switcher button in the top panel for fast user switching. Only visible when multiple user accounts exist.</description>
     </key>
+    <!-- Spotlight Search settings -->
+    <key name="spotlight-show-panel-icon" type="b">
+      <default>false</default>
+      <summary>Show Spotlight Panel Icon</summary>
+      <description>Show a search icon in the top panel to toggle Spotlight search overlay.</description>
+    </key>
+    <key name="spotlight-keybinding" type="s">
+      default="&lt;Control&gt;&lt;Super&gt;space"
+      <summary>Spotlight Keybinding</summary>
+      <description>Global keyboard shortcut to toggle Spotlight search overlay.</description>
+    </key>
+    <key name="spotlight-blur-background" type="b">
+      <default>false</default>
+      <summary>Spotlight Blur Background</summary>
+      <description>Apply a blurred background effect to the Spotlight overlay. Requires imagemagick to be installed.</description>
+    </key>
+    <key name="spotlight-background-color" type="s">
+      default="rgba(0,0,0,0.8)"
+      <summary>Spotlight Background Color</summary>
+      <description>Background color for the Spotlight overlay (CSS rgba format).</description>
+    </key>
+    <key name="spotlight-panel-icon-color" type="s">
+      default="rgba(255,255,255,1)"
+      <summary>Spotlight Panel Icon Color</summary>
+      <description>Color of the Spotlight panel icon (CSS rgba format).</description>
+    </key>
+    <key name="spotlight-use-animations" type="b">
+      <default>true</default>
+      <summary>Spotlight Use Animations</summary>
+      <description>Enable smooth open/close animations for the Spotlight overlay.</description>
+    </key>
   </schema>
 </schemalist>

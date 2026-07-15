@@ -202,27 +202,62 @@ export class MenuManager {
         this._virtualDevice = null;
 
         // Pre-allocated blacklist cache
-        this._cachedBlacklist = null;
+        this._cachedBlacklistKey = null;
         this._cachedBlacklistLower = null;
         this._cachedBlacklistSet = null;
 
         // Auto-detected distro icon (computed once, used as fallback)
         this._distroIcon = detectDistroIcon();
+
+        // Cached settings values (updated via signals, not read per focus change)
+        this._cachedMenuIcon = this._settings ? this._settings.get_string('menu-icon') : '';
+        this._cachedShowOsIcon = this._settings ? this._settings.get_boolean('show-os-icon') : true;
+
+        // Cached singletons (avoid repeated get_default() calls)
+        this._windowTracker = Shell.WindowTracker.get_default();
+        this._appSystem = Shell.AppSystem.get_default();
+
+        // App menu cache — avoid rebuild when same app stays focused
+        this._lastAppId = null;
+        this._lastAppMenuData = null;
+
+        // Listen for settings changes
+        if (this._settings) {
+            this._settings.connect('changed::show-os-icon', () => {
+                this._cachedShowOsIcon = this._settings.get_boolean('show-os-icon');
+                this._updateOsIconVisibility();
+            });
+            this._settings.connect('changed::menu-icon', () => {
+                this._cachedMenuIcon = this._settings.get_string('menu-icon');
+                // Invalidate app cache so slot 0 updates on next focus change
+                this._lastAppId = null;
+            });
+        }
     }
 
     get _menuIcon() {
-        if (!this._settings) return this._distroIcon;
-        const setting = this._settings.get_string('menu-icon');
-        return (setting && setting.length > 0) ? setting : this._distroIcon;
+        return (this._cachedMenuIcon && this._cachedMenuIcon.length > 0)
+            ? this._cachedMenuIcon
+            : this._distroIcon;
+    }
+
+    get _showOsIcon() {
+        return this._cachedShowOsIcon;
+    }
+
+    _updateOsIconVisibility() {
+        if (this._buttons.length === 0) return;
+        const osIconBtn = this._buttons[0];
+        osIconBtn.visible = this._showOsIcon;
     }
 
     get _blacklist() {
         if (!this._settings) return [];
         const raw = this._settings.get_strv('app-blacklist');
         // Invalidate cache only when values actually changed (get_strv returns new array each call)
-        if (!this._cachedBlacklistLower || raw.length !== this._cachedBlacklist.length ||
-            raw.some((s, i) => s !== this._cachedBlacklist[i])) {
-            this._cachedBlacklist = raw;
+        const key = raw.join('\0');
+        if (key !== this._cachedBlacklistKey) {
+            this._cachedBlacklistKey = key;
             this._cachedBlacklistLower = raw.map(s => s.toLowerCase());
             this._cachedBlacklistSet = new Set(this._cachedBlacklistLower);
         }
@@ -250,22 +285,16 @@ export class MenuManager {
             let windowType = window.get_window_type();
 
             if (windowType === 0) {
-                let tracker = Shell.WindowTracker.get_default();
-                detectedApp = tracker.get_window_app(window);
+                detectedApp = this._windowTracker.get_window_app(window);
 
                 // Fast-path: skip blacklist entirely if list is empty
                 const blacklistLower = this._blacklist;
                 const blacklistSet = this._cachedBlacklistSet;
                 if (blacklistLower.length > 0) {
-                    let checkId = detectedApp ? (detectedApp.get_id() || "") : "";
-                    let checkName = detectedApp ? (detectedApp.get_name() || "") : "";
-                    let wmClass = window.get_wm_class() || "";
-                    let title = window.get_title() || "";
-
-                    const idLower = checkId.toLowerCase();
-                    const nameLower = checkName.toLowerCase();
-                    const wmClassLower = wmClass.toLowerCase();
-                    const titleLower = title.toLowerCase();
+                    const idLower = detectedApp ? (detectedApp.get_id() || "").toLowerCase() : "";
+                    const nameLower = detectedApp ? (detectedApp.get_name() || "").toLowerCase() : "";
+                    const wmClassLower = (window.get_wm_class() || "").toLowerCase();
+                    const titleLower = (window.get_title() || "").toLowerCase();
 
                     // O(1) exact match first, then O(n) substring fallback
                     const isBlacklisted = blacklistSet.has(idLower) ||
@@ -288,13 +317,10 @@ export class MenuManager {
                     appName = detectedApp.get_name();
                     isAppFocused = true;
                 } else if (window.get_wm_class()) {
-                    let wmClass = window.get_wm_class();
-                    // Try to look up the app by WM class first
-                    let appSystem = Shell.AppSystem.get_default();
-                    let fallbackApp = appSystem.lookup_desktop_wmclass(wmClass);
+                    const wmClass = window.get_wm_class();
+                    let fallbackApp = this._appSystem.lookup_desktop_wmclass(wmClass);
                     if (!fallbackApp) {
-                        // Also try the lowercase version (e.g. "org.gnome.nautilus")
-                        fallbackApp = appSystem.lookup_desktop_wmclass(wmClass.toLowerCase());
+                        fallbackApp = this._appSystem.lookup_desktop_wmclass(wmClass.toLowerCase());
                     }
                     if (fallbackApp) {
                         detectedApp = fallbackApp;
@@ -307,9 +333,23 @@ export class MenuManager {
             }
         }
 
+        const currentAppId = detectedApp ? detectedApp.get_id() : null;
+
+        // Skip rebuild if same app is still focused (only update OS icon visibility)
+        if (currentAppId === this._lastAppId && this._lastAppMenuData) {
+            if (this._buttons.length > 0) {
+                this._buttons[0].visible = this._showOsIcon;
+            }
+            return;
+        }
+
         const appChildren = isAppFocused
             ? buildAppMenu(appName, detectedApp)
             : buildFallbackAppMenu();
+
+        // Cache app menu data
+        this._lastAppId = currentAppId;
+        this._lastAppMenuData = appChildren;
 
         const newMenuData = [
             { label: this._menuIcon, children: APPLE_MENU_CHILDREN },
@@ -343,6 +383,11 @@ export class MenuManager {
         while (this._buttons.length > MENU_SLOT_COUNT) {
             const extra = this._buttons.pop();
             extra.destroy();
+        }
+
+        // Update OS icon visibility
+        if (this._buttons.length > 0) {
+            this._buttons[0].visible = this._showOsIcon;
         }
     }
 

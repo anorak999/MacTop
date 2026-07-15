@@ -14,12 +14,17 @@
     <key name="menu-icon" type="s">
       <default>''</default>
       <summary>Menu Icon</summary>
-      <description>Custom icon for the system menu (position 0). Leave empty to use Apple logo. Accepts: icon name (e.g. 'debian-logo'), emoji, or text.</description>
+      <description>Icon for the system menu (position 0). Leave empty to auto-detect from your distro. Select "Apple" to use the Apple logo.</description>
     </key>
     <key name="lock-to-focused-app" type="b">
       <default>true</default>
       <summary>Lock Menu to Focused App</summary>
       <description>When enabled, the app menu stays locked to the currently focused app even when hovering over the panel. The menu only changes when you switch to a different window or show the desktop.</description>
+    </key>
+    <key name="show-os-icon" type="b">
+      <default>true</default>
+      <summary>Show OS Icon</summary>
+      <description>Show the OS logo icon in the top panel. When hidden, the menu is still accessible but the icon is not displayed.</description>
     </key>
   </schema>
 </schemalist>

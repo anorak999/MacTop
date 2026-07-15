@@ -20,6 +20,7 @@ cp -rv "$SOURCE_DIR/prefs.js" "$EXTENSION_DIR/"
 cp -rv "$SOURCE_DIR/stylesheet.css" "$EXTENSION_DIR/"
 cp -rv "$SOURCE_DIR/actions" "$EXTENSION_DIR/"
 cp -rv "$SOURCE_DIR/menus" "$EXTENSION_DIR/"
+cp -rv "$SOURCE_DIR/icons" "$EXTENSION_DIR/"
 cp -rv "$SOURCE_DIR/uninstall.sh" "$EXTENSION_DIR/"
 cp -rv "$SOURCE_DIR/schemas" "$EXTENSION_DIR/"
 

@@ -27,6 +27,13 @@ export default class MacTopPreferences extends ExtensionPreferences {
         settings.bind('show-indicator', indicatorRow, 'active', Gio.SettingsBindFlags.DEFAULT);
         indicatorGroup.add(indicatorRow);
 
+        const lockRow = new Adw.SwitchRow({
+            title: 'Lock menu to focused app',
+            subtitle: 'Keep the app menu locked to the focused window. Only changes when you switch to a different window or show the desktop.',
+        });
+        settings.bind('lock-to-focused-app', lockRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        indicatorGroup.add(lockRow);
+
         // Appearance group
         const appearanceGroup = new Adw.PreferencesGroup({
             title: 'Appearance',

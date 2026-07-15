@@ -17,16 +17,16 @@ import { buildGoMenu } from './menus/goMenu.js';
 import { buildWindowMenu } from './menus/windowMenu.js';
 import { buildHelpMenu } from './menus/helpMenu.js';
 
-// Distro icon map — uses distributor-logo-* icon names from GTK icon theme
+// Distro icon map — local symbolic SVG icons for panel-friendly display
 const DISTRO_ICONS = {
     'debian':     'distributor-logo-debian',
-    'ubuntu':     'distributor-logo-ubuntu-mate',
+    'ubuntu':     'distributor-logo-ubuntu',
     'fedora':     'distributor-logo-fedora',
     'arch':       'distributor-logo-archlinux',
     'manjaro':    'distributor-logo-manjaro',
     'opensuse':   'distributor-logo-opensuse',
-    'centos':     'distributor-logo-rhel',
-    'rhel':       'distributor-logo-rhel',
+    'centos':     'distributor-logo-fedora',
+    'rhel':       'distributor-logo-fedora',
     'alpine':     'distributor-logo-alpine',
     'mint':       'distributor-logo-linux-mint',
     'pop':        'distributor-logo-pop-os',
@@ -36,13 +36,13 @@ const DISTRO_ICONS = {
     'void':       'distributor-logo-void',
     'gentoo':     'distributor-logo-gentoo',
     'slackware':  'distributor-logo-archlinux',
-    'solus':      'distributor-logo-solus',
+    'solus':      'distributor-logo-fedora',
     'zorin':      'distributor-logo-zorin',
     'endeavour':  'distributor-logo-endeavouros',
     'nobara':     'distributor-logo-fedora',
     'kali':       'distributor-logo-kali-linux',
-    'deepin':     'distributor-logo-deepin',
-    'devuan':     'distributor-logo-devuan',
+    'deepin':     'distributor-logo-debian',
+    'devuan':     'distributor-logo-debian',
 };
 
 function detectDistroIcon() {
@@ -60,6 +60,27 @@ function detectDistroIcon() {
     }
     return 'distributor-logo-debian';
 }
+
+// Computed once at module load — avoids recomputing per button init
+const EXTENSION_ICONS_DIR = (() => {
+    // Resolve icons/ relative to this extension's directory
+    try {
+        const url = import.meta.url;
+        if (url.startsWith('file://')) {
+            const filePath = GLib.filename_from_uri(url, null)[0];
+            const extensionDir = GLib.path_get_dirname(filePath);
+            return GLib.build_filenamev([extensionDir, 'icons']);
+        }
+    } catch (e) {
+        // fallback
+    }
+    // Fallback: assume standard install location
+    return GLib.build_filenamev([
+        GLib.get_home_dir(),
+        '.local', 'share', 'gnome-shell', 'extensions',
+        'mactop@anorak', 'icons'
+    ]);
+})();
 
 // Apple Menu — always present, computed once
 const APPLE_MENU_CHILDREN = buildAppleMenu();
@@ -87,10 +108,24 @@ const TopLevelMenuButton = GObject.registerClass(
       // Determine if label is an icon name (e.g. distributor-logo-*)
       if (label && (label.includes('distributor-logo') || label.includes('-logo'))) {
         this._isIcon = true;
-        let icon = new St.Icon({
-            icon_name: label,
-            style_class: 'system-status-icon',
-        });
+        // Try loading from local icons/ directory first
+        let icon = null;
+        const iconsDir = EXTENSION_ICONS_DIR;
+        const iconPath = GLib.build_filenamev([iconsDir, `${label}.svg`]);
+        if (GLib.file_test(iconPath, GLib.FileTest.EXISTS)) {
+            const file = Gio.File.new_for_path(iconPath);
+            const gicon = new Gio.FileIcon({ file });
+            icon = new St.Icon({
+                gicon,
+                style_class: 'system-status-icon',
+            });
+        } else {
+            // Fallback to icon theme
+            icon = new St.Icon({
+                icon_name: label,
+                style_class: 'system-status-icon',
+            });
+        }
         this.add_child(icon);
         this._titleWidget = icon;
       } else {
@@ -167,6 +202,7 @@ export class MenuManager {
         // Pre-allocated blacklist cache
         this._cachedBlacklist = null;
         this._cachedBlacklistLower = null;
+        this._cachedBlacklistSet = null;
 
         // Auto-detected distro icon (computed once, used as fallback)
         this._distroIcon = detectDistroIcon();
@@ -181,10 +217,12 @@ export class MenuManager {
     get _blacklist() {
         if (!this._settings) return [];
         const raw = this._settings.get_strv('app-blacklist');
-        // Invalidate cache if blacklist changed
-        if (raw !== this._cachedBlacklist) {
+        // Invalidate cache only when values actually changed (get_strv returns new array each call)
+        if (!this._cachedBlacklistLower || raw.length !== this._cachedBlacklist.length ||
+            raw.some((s, i) => s !== this._cachedBlacklist[i])) {
             this._cachedBlacklist = raw;
             this._cachedBlacklistLower = raw.map(s => s.toLowerCase());
+            this._cachedBlacklistSet = new Set(this._cachedBlacklistLower);
         }
         return this._cachedBlacklistLower;
     }
@@ -215,24 +253,29 @@ export class MenuManager {
 
                 // Fast-path: skip blacklist entirely if list is empty
                 const blacklistLower = this._blacklist;
+                const blacklistSet = this._cachedBlacklistSet;
                 if (blacklistLower.length > 0) {
                     let checkId = detectedApp ? (detectedApp.get_id() || "") : "";
                     let checkName = detectedApp ? (detectedApp.get_name() || "") : "";
                     let wmClass = window.get_wm_class() || "";
                     let title = window.get_title() || "";
 
-                    // Lowercase identifiers once
                     const idLower = checkId.toLowerCase();
                     const nameLower = checkName.toLowerCase();
                     const wmClassLower = wmClass.toLowerCase();
                     const titleLower = title.toLowerCase();
 
-                    const isBlacklisted = blacklistLower.some(item =>
-                        idLower.includes(item) ||
-                        nameLower.includes(item) ||
-                        wmClassLower.includes(item) ||
-                        titleLower.includes(item)
-                    );
+                    // O(1) exact match first, then O(n) substring fallback
+                    const isBlacklisted = blacklistSet.has(idLower) ||
+                        blacklistSet.has(nameLower) ||
+                        blacklistSet.has(wmClassLower) ||
+                        blacklistSet.has(titleLower) ||
+                        blacklistLower.some(item =>
+                            idLower.includes(item) ||
+                            nameLower.includes(item) ||
+                            wmClassLower.includes(item) ||
+                            titleLower.includes(item)
+                        );
 
                     if (isBlacklisted) {
                         detectedApp = null;
@@ -244,7 +287,19 @@ export class MenuManager {
                     isAppFocused = true;
                 } else if (window.get_wm_class()) {
                     let wmClass = window.get_wm_class();
-                    appName = wmClass.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                    // Try to look up the app by WM class first
+                    let appSystem = Shell.AppSystem.get_default();
+                    let fallbackApp = appSystem.lookup_desktop_wmclass(wmClass);
+                    if (!fallbackApp) {
+                        // Also try the lowercase version (e.g. "org.gnome.nautilus")
+                        fallbackApp = appSystem.lookup_desktop_wmclass(wmClass.toLowerCase());
+                    }
+                    if (fallbackApp) {
+                        detectedApp = fallbackApp;
+                        appName = fallbackApp.get_name();
+                    } else {
+                        appName = wmClass.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                    }
                     isAppFocused = true;
                 }
             }
@@ -270,12 +325,15 @@ export class MenuManager {
         }
 
         // Update existing buttons in-place
+        // Only index 1 (app menu) changes per focus; indices 0,2-7 are static
         for (let i = 0; i < MENU_SLOT_COUNT; i++) {
             const btn = this._buttons[i];
             const data = newMenuData[i];
 
             btn._appInstance = detectedApp;
             btn.updateLabel(data.label);
+            // Skip rebuild for static menus (Apple=0, File=2, Edit=3, View=4, Go=5, Window=6, Help=7)
+            if (i !== 1) continue;
             btn.rebuildMenu(data.children);
         }
 

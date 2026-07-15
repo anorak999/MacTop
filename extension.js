@@ -10,22 +10,44 @@ export default class MacTopExtension extends Extension {
         this._menuManager = null;
         this._settings = null;
         this._focusTimeoutId = 0;
+        this._focusedWindow = null;
     }
 
     enable() {
         console.log(`[mactop@anorak] Enabling extension.`);
 
         this._settings = this.getSettings('org.gnome.shell.extensions.mactop');
+        this._focusedWindow = null;
 
         const uuid = this.metadata.uuid || 'mactop@anorak';
         this._menuManager = new MenuManager(uuid, this._settings);
 
         let initialWindow = global.display.get_focus_window();
-        this._menuManager.updateMenuForWindow(initialWindow);
+        this._updateMenu(initialWindow);
 
         global.display.connectObject('notify::focus-window', () => {
             this._scheduleMenuUpdate();
         }, this);
+    }
+
+    _updateMenu(window) {
+        if (!this._menuManager) return;
+
+        const lockEnabled = this._settings
+            ? this._settings.get_boolean('lock-to-focused-app')
+            : true;
+
+        if (lockEnabled) {
+            // Only update if the focused window actually changed
+            if (window === this._focusedWindow) {
+                return;
+            }
+            this._focusedWindow = window;
+        } else {
+            this._focusedWindow = window;
+        }
+
+        this._menuManager.updateMenuForWindow(window);
     }
 
     _scheduleMenuUpdate() {
@@ -38,7 +60,7 @@ export default class MacTopExtension extends Extension {
             () => {
                 this._focusTimeoutId = 0;
                 let activeWindow = global.display.get_focus_window();
-                this._menuManager.updateMenuForWindow(activeWindow);
+                this._updateMenu(activeWindow);
                 return GLib.SOURCE_REMOVE;
             }
         );
@@ -53,6 +75,8 @@ export default class MacTopExtension extends Extension {
             GLib.source_remove(this._focusTimeoutId);
             this._focusTimeoutId = 0;
         }
+
+        this._focusedWindow = null;
 
         if (this._menuManager) {
             this._menuManager.destroy();

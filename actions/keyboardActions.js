@@ -11,7 +11,7 @@ const SHORTCUT_MAP = {
     'undo':             [SC.KEY_CTRL, SC.KEY_Z, true],
     'redo':             [SC.KEY_CTRL, SC.KEY_Y, true],
     'select-all':       [SC.KEY_CTRL, SC.KEY_A, true],
-    'new-tab':          [SC.KEY_CTRL, SC.KEY_ENTER, true],
+    'new-tab':          [SC.KEY_CTRL, SC.KEY_T, true],
     'print':            [SC.KEY_CTRL, SC.KEY_P, true],
     'emoji-picker':     [SC.KEY_CTRL, SC.KEY_PERIOD, true],
     'toggle-fullscreen': [0, SC.KEY_F11, false],
@@ -21,6 +21,7 @@ const SHORTCUT_MAP = {
     'virtual-open':     [0, SC.KEY_ENTER, false],
     'properties':       [SC.KEY_ALT, SC.KEY_ENTER, true],
     'rename-file':      [0, SC.KEY_F2, false],
+    'find':             [SC.KEY_CTRL, SC.KEY_F, true],
 };
 
 function sendKey(virtualDevice, timeUs, scanCode, state) {

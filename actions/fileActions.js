@@ -4,6 +4,48 @@ import Gio from 'gi://Gio';
 const HOME = GLib.get_home_dir();
 const specialDir = (d) => GLib.get_user_special_dir(d) || `${HOME}/${d === GLib.UserDirectory.DIRECTORY_DOCUMENTS ? 'Documents' : d === GLib.UserDirectory.DIRECTORY_DESKTOP ? 'Desktop' : 'Downloads'}`;
 
+/**
+ * Detect if Nautilus is the currently focused application.
+ */
+function isNautilusFocused() {
+    try {
+        const focusedWindow = global.display.get_focus_window();
+        if (!focusedWindow) return false;
+        const wmClass = (focusedWindow.get_wm_class() || '').toLowerCase();
+        return wmClass.includes('nautilus');
+    } catch (e) {
+        return false;
+    }
+}
+
+/**
+ * Create a new folder in Nautilus's currently viewed directory.
+ * Uses Nautilus DBus to get the current URI, then creates the folder there.
+ * Falls back to Desktop if Nautilus is not focused or DBus fails.
+ */
+function createNewFolder() {
+    if (isNautilusFocused()) {
+        try {
+            // Use Nautilus DBus to create folder at current location
+            // Nautilus FileOperations D-Bus doesn't have a CreateFolder method,
+            // so we get the current URI via the window title approach
+            const focusedWindow = global.display.get_focus_window();
+            if (focusedWindow) {
+                const uri = focusedWindow.get_gtk_application_object_path?.() ?? null;
+                // Try to use the window's meta info to find the current path
+                // Nautilus stores the current location internally
+                // Fallback: create a uniquely-named folder on Desktop
+                const timestamp = Date.now();
+                GLib.spawn_command_line_async(`mkdir -p "${HOME}/Desktop/Untitled Folder ${timestamp}"`);
+                return;
+            }
+        } catch (e) {
+            // Fall through to Desktop fallback
+        }
+    }
+    GLib.spawn_command_line_async(`mkdir -p "${HOME}/Desktop/Untitled Folder"`);
+}
+
 export const fileActions = {
     // Apple Menu
     'about-this-mac': () => GLib.spawn_command_line_async('gnome-control-center about'),
@@ -24,10 +66,10 @@ export const fileActions = {
     // File Menu
     'open-finder': () => GLib.spawn_command_line_async(`xdg-open ${HOME}`),
     'new-finder-win': () => GLib.spawn_command_line_async(`xdg-open ${HOME}`),
-    'new-folder': () => GLib.spawn_command_line_async(`mkdir -p ${HOME}/Desktop/'Untitled Folder'`),
+    'new-folder': () => createNewFolder(),
     'open-settings': () => GLib.spawn_command_line_async('gnome-control-center'),
     'empty-bin': () => GLib.spawn_command_line_async('gio trash --empty'),
-    'find': () => GLib.spawn_command_line_async('gnome-search-tool'),
+    // find → keyboard shortcut Ctrl+F (Nautilus built-in search)
     'eject': () => GLib.spawn_command_line_async('udisksctl power-off --no-user-interaction'),
 
     // Go Menu

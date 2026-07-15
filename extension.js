@@ -42,6 +42,10 @@ export default class MacTopExtension extends Extension {
             if (window === this._focusedWindow) {
                 return;
             }
+            // If window is null (e.g., hovering over panel), keep previous menu
+            if (window === null) {
+                return;
+            }
             this._focusedWindow = window;
         } else {
             this._focusedWindow = window;

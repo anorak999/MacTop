@@ -14,7 +14,7 @@
     <key name="menu-icon" type="s">
       <default>''</default>
       <summary>Menu Icon</summary>
-      <description>Custom icon for the system menu (position 0). Leave empty to auto-detect distro. Accepts: icon name (e.g. 'debian-logo'), emoji, or text.</description>
+      <description>Custom icon for the system menu (position 0). Leave empty to use Apple logo. Accepts: icon name (e.g. 'debian-logo'), emoji, or text.</description>
     </key>
     <key name="lock-to-focused-app" type="b">
       <default>true</default>

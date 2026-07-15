@@ -51,7 +51,7 @@ export default class MacTopPreferences extends ExtensionPreferences {
         appearanceGroup.add(iconRow);
 
         const iconHelpRow = new Adw.ActionRow({
-            title: 'Leave empty to auto-detect distro icon',
+            title: 'Leave empty to use Apple logo',
             subtitle: 'Accepts: icon name (e.g. debian-logo, ubuntu-logo), emoji, or text.',
             activatable: false,
         });

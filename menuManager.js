@@ -82,6 +82,8 @@ const EXTENSION_ICONS_DIR = (() => {
     ]);
 })();
 
+const APPLE_LOGO_ICON = 'apple-logo';
+
 // Apple Menu — always present, computed once
 const APPLE_MENU_CHILDREN = buildAppleMenu();
 

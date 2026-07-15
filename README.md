@@ -1,10 +1,13 @@
 # MacTop
 
-A macOS-inspired global menu for GNOME Shell — places a clean, unified application menu into the top panel with window actions, navigation controls, and quick-access shortcuts.
+A macOS-inspired global menu for GNOME Shell — places a clean, unified application menu into the top panel with window actions, navigation controls, quick-access shortcuts, and a fast user switcher.
 
 ## Features
 
-- Global menu bar with per-app and universal menus (File, Edit, View, Go, Window, Help)
+- **Apple Menu** — About This Mac, System Settings, App Store, Recent Items, Force Quit, Sleep, Restart, Shut Down, Lock Screen, Log Out
+- **Global menu bar** with per-app and universal menus (File, Edit, View, Go, Window, Help)
+- **Fast User Switching** — avatar-based user switcher in the right side of the panel with session switching support
+- **Recent Items submenu** — displays recently used files and applications with document tooltips
 - Dynamic app name and open-window list based on focused window
 - Virtual keyboard shortcuts (Copy, Paste, Cut, Undo, Redo, Select All, Emoji)
 - Navigation (Back, Forward, Recents, Documents, Desktop, Downloads, Home)
@@ -48,8 +51,12 @@ MacTop/
 ├── extension.js              # Entry point
 ├── menuManager.js            # Panel menu orchestrator
 ├── prefs.js                  # Settings UI (Adw)
+├── prefs.css                 # Preferences window styles
 ├── stylesheet.css            # Panel and menu styles
 ├── metadata.json             # GNOME Shell extension metadata
+├── recentItemsSubmenu.js     # Recent files/applications submenu
+├── userSwitcher.js           # Fast user switching with avatars
+├── documentTooltip.js        # Delayed tooltip for document entries
 ├── schemas/
 │   └── org.gnome.shell.extensions.mactop.gschema.xml
 ├── actions/
@@ -57,8 +64,10 @@ MacTop/
 │   ├── windowActions.js      # Window actions (close, minimize, maximize)
 │   ├── fileActions.js        # File/system actions (finder, folders, trash)
 │   ├── keyboardActions.js    # Virtual keyboard shortcuts
+│   ├── viewActions.js        # Nautilus view preferences (icon size, sort)
 │   └── scancodes.js          # Named scan code constants
 ├── menus/
+│   ├── appleMenu.js          # Apple menu (leftmost, always present)
 │   ├── appMenu.js            # Dynamic app submenu
 │   ├── fileMenu.js           # File menu definition
 │   ├── editMenu.js           # Edit menu definition
@@ -66,6 +75,7 @@ MacTop/
 │   ├── goMenu.js             # Go menu definition
 │   ├── windowMenu.js         # Window menu definition
 │   └── helpMenu.js           # Help menu definition
+├── icons/                    # Linux distro and app icons (SVG)
 ├── install.sh
 ├── uninstall.sh
 └── tests/

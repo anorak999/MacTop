@@ -17,3 +17,16 @@
     font-size: 9pt;
     color: #999;
 }
+
+/* Recent items submenu */
+.mactop-recent-menu {
+    min-width: 280px;
+}
+
+/* Document tooltip for recent file paths */
+.mactop-document-tooltip {
+    font-size: 9pt;
+    padding: 4px 8px;
+    border-radius: 4px;
+    max-width: 400px;
+}

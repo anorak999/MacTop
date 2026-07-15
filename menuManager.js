@@ -16,6 +16,7 @@ import { buildViewMenu } from './menus/viewMenu.js';
 import { buildGoMenu } from './menus/goMenu.js';
 import { buildWindowMenu } from './menus/windowMenu.js';
 import { buildHelpMenu } from './menus/helpMenu.js';
+import { RecentItemsSubmenu } from './recentItemsSubmenu.js';
 
 // Distro icon map — local symbolic SVG icons for panel-friendly display
 const DISTRO_ICONS = {
@@ -177,6 +178,9 @@ const TopLevelMenuButton = GObject.registerClass(
           const subMenu = new PopupMenu.PopupSubMenuMenuItem(item.label);
           this._buildSubMenu(item.children, subMenu.menu);
           parentMenu.addMenuItem(subMenu);
+        } else if (item.type === "recent-submenu") {
+          const recentSubmenu = new RecentItemsSubmenu(item.label, parentMenu);
+          parentMenu.addMenuItem(recentSubmenu);
         } else {
           const menuItem = new PopupMenu.PopupMenuItem(item.label);
           if (item.action) {

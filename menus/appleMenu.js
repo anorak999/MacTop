@@ -9,7 +9,7 @@ export function buildAppleMenu() {
         { label: "System Settings", action: "system-settings" },
         { label: "App Store", action: "app-store" },
         { type: "separator" },
-        { label: "Recent Items", action: "recent-items" },
+        { type: "recent-submenu", label: "Recent Items" },
         { type: "separator" },
         { label: "Force Quit...", action: "force-quit" },
         { type: "separator" },

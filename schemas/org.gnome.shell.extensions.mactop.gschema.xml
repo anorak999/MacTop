@@ -71,5 +71,95 @@
       <summary>Spotlight Use Animations</summary>
       <description>Enable smooth open/close animations for the Spotlight overlay.</description>
     </key>
+    <key name="spotlight-animation-speed" type="i">
+      <default>100</default>
+      <summary>Spotlight Animation Speed</summary>
+      <description>Duration in milliseconds for open/close animations.</description>
+    </key>
+    <key name="spotlight-background-color" type="ad">
+      <default>[0.0, 0.0, 0.0, 0.5]</default>
+      <summary>Spotlight Background Color</summary>
+      <description>Background color as [r, g, b, a] with values 0.0-1.0.</description>
+    </key>
+    <key name="spotlight-border-radius" type="i">
+      <default>0</default>
+      <summary>Spotlight Border Radius</summary>
+      <description>Border radius index (0=none, 1=16, 2=18, 3=20, 4=22, 5=24, 6=28, 7=32).</description>
+    </key>
+    <key name="spotlight-scale-width" type="d">
+      <default>0.2</default>
+      <summary>Spotlight Scale Width</summary>
+      <description>Width scaling factor for the overlay.</description>
+    </key>
+    <key name="spotlight-scale-height" type="d">
+      <default>0.2</default>
+      <summary>Spotlight Scale Height</summary>
+      <description>Height scaling factor for the overlay.</description>
+    </key>
+    <key name="spotlight-font-size" type="i">
+      <default>0</default>
+      <summary>Spotlight Font Size</summary>
+      <description>Font size index (0=auto, 1=16, 2=18, 3=20, 4=22, 5=24).</description>
+    </key>
+    <key name="spotlight-entry-font-size" type="i">
+      <default>1</default>
+      <summary>Spotlight Entry Font Size</summary>
+      <description>Entry font size index (0=auto, 1=16, 2=18, 3=20, 4=22, 5=24).</description>
+    </key>
+    <key name="spotlight-text-color" type="ad">
+      <default>[1.0, 1.0, 1.0, 0.0]</default>
+      <summary>Spotlight Text Color</summary>
+      <description>Text color as [r, g, b, a]. Alpha 0 means auto-detect from background.</description>
+    </key>
+    <key name="spotlight-entry-text-color" type="ad">
+      <default>[1.0, 1.0, 1.0, 0.0]</default>
+      <summary>Spotlight Entry Text Color</summary>
+      <description>Entry text color as [r, g, b, a]. Alpha 0 means auto-detect.</description>
+    </key>
+    <key name="spotlight-panel-icon-color" type="ad">
+      <default>[1.0, 1.0, 1.0, 1.0]</default>
+      <summary>Spotlight Panel Icon Color</summary>
+      <description>Panel icon color as [r, g, b, a].</description>
+    </key>
+    <key name="spotlight-window-effect" type="i">
+      <default>0</default>
+      <summary>Spotlight Window Effect</summary>
+      <description>Window effect type (0=none, 1=tint, 2=monochrome, 3=blur).</description>
+    </key>
+    <key name="spotlight-window-effect-color" type="ad">
+      <default>[1.0, 1.0, 1.0, 1.0]</default>
+      <summary>Spotlight Window Effect Color</summary>
+      <description>Window effect color as [r, g, b, a].</description>
+    </key>
+    <key name="spotlight-preferred-monitor" type="i">
+      <default>0</default>
+      <summary>Spotlight Preferred Monitor</summary>
+      <description>Preferred monitor index (0=auto/primary).</description>
+    </key>
+    <key name="spotlight-popup-at-cursor-monitor" type="b">
+      <default>false</default>
+      <summary>Spotlight Popup at Cursor Monitor</summary>
+      <description>When enabled, spotlight appears on the monitor where the cursor is.</description>
+    </key>
+    <key name="spotlight-border-thickness" type="i">
+      <default>0</default>
+      <summary>Spotlight Border Thickness</summary>
+      <description>Border thickness in pixels (0=none).</description>
+    </key>
+    <key name="spotlight-border-color" type="ad">
+      <default>[1.0, 1.0, 1.0, 1.0]</default>
+      <summary>Spotlight Border Color</summary>
+      <description>Border color as [r, g, b, a].</description>
+    </key>
+    <key name="spotlight-blur-sigma" type="i">
+      <default>30</default>
+      <summary>Spotlight Blur Sigma</summary>
+      <description>Blur sigma for background blur effect.</description>
+    </key>
+    <key name="spotlight-blur-brightness" type="d">
+      <default>0.6</default>
+      <summary>Spotlight Blur Brightness</summary>
+      <description>Brightness for background blur effect.</description>
+    </key>
   </schema>
 </schemalist>

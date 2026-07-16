@@ -227,6 +227,153 @@ export default class MacTopPreferences extends ExtensionPreferences {
 
         spotlightGroup.add(themeRow);
 
+        // Animation speed
+        const animSpeedRow = new Adw.SpinRow({
+            title: 'Animation Speed (ms)',
+            subtitle: 'Duration of open/close animations in milliseconds.',
+            adjustment: new Gtk.Adjustment({
+                lower: 50,
+                upper: 500,
+                step_increment: 10,
+                page_increment: 50,
+            }),
+        });
+        settings.bind('spotlight-animation-speed', animSpeedRow, 'value', Gio.SettingsBindFlags.DEFAULT);
+        spotlightGroup.add(animSpeedRow);
+
+        // Scale width
+        const scaleWidthRow = new Adw.SpinRow({
+            title: 'Scale Width',
+            subtitle: 'Width scaling factor for the overlay (0.0-1.0).',
+            adjustment: new Gtk.Adjustment({
+                lower: 0.0,
+                upper: 1.0,
+                step_increment: 0.05,
+                page_increment: 0.1,
+            }),
+        });
+        settings.bind('spotlight-scale-width', scaleWidthRow, 'value', Gio.SettingsBindFlags.DEFAULT);
+        spotlightGroup.add(scaleWidthRow);
+
+        // Scale height
+        const scaleHeightRow = new Adw.SpinRow({
+            title: 'Scale Height',
+            subtitle: 'Height scaling factor for the overlay (0.0-1.0).',
+            adjustment: new Gtk.Adjustment({
+                lower: 0.0,
+                upper: 1.0,
+                step_increment: 0.05,
+                page_increment: 0.1,
+            }),
+        });
+        settings.bind('spotlight-scale-height', scaleHeightRow, 'value', Gio.SettingsBindFlags.DEFAULT);
+        spotlightGroup.add(scaleHeightRow);
+
+        // Border radius
+        const borderRadiusRow = new Adw.SpinRow({
+            title: 'Border Radius',
+            subtitle: 'Border radius index (0=none, 7=32px).',
+            adjustment: new Gtk.Adjustment({
+                lower: 0,
+                upper: 7,
+                step_increment: 1,
+                page_increment: 1,
+            }),
+        });
+        settings.bind('spotlight-border-radius', borderRadiusRow, 'value', Gio.SettingsBindFlags.DEFAULT);
+        spotlightGroup.add(borderRadiusRow);
+
+        // Border thickness
+        const borderThicknessRow = new Adw.SpinRow({
+            title: 'Border Thickness (px)',
+            subtitle: 'Border thickness in pixels (0=none).',
+            adjustment: new Gtk.Adjustment({
+                lower: 0,
+                upper: 4,
+                step_increment: 1,
+                page_increment: 1,
+            }),
+        });
+        settings.bind('spotlight-border-thickness', borderThicknessRow, 'value', Gio.SettingsBindFlags.DEFAULT);
+        spotlightGroup.add(borderThicknessRow);
+
+        // Font size
+        const fontSizeModel = new Gtk.StringList();
+        fontSizeModel.append('Auto');
+        fontSizeModel.append('16pt');
+        fontSizeModel.append('18pt');
+        fontSizeModel.append('20pt');
+        fontSizeModel.append('22pt');
+        fontSizeModel.append('24pt');
+
+        const fontSizeRow = new Adw.ComboRow({
+            title: 'Font Size',
+            subtitle: 'Font size for result text.',
+            model: fontSizeModel,
+        });
+        settings.bind('spotlight-font-size', fontSizeRow, 'selected', Gio.SettingsBindFlags.DEFAULT);
+        spotlightGroup.add(fontSizeRow);
+
+        // Entry font size
+        const entryFontSizeRow = new Adw.ComboRow({
+            title: 'Entry Font Size',
+            subtitle: 'Font size for the search entry.',
+            model: fontSizeModel,
+        });
+        settings.bind('spotlight-entry-font-size', entryFontSizeRow, 'selected', Gio.SettingsBindFlags.DEFAULT);
+        spotlightGroup.add(entryFontSizeRow);
+
+        // Window effect
+        const windowEffectModel = new Gtk.StringList();
+        windowEffectModel.append('None');
+        windowEffectModel.append('Tint');
+        windowEffectModel.append('Monochrome');
+        windowEffectModel.append('Blur');
+
+        const windowEffectRow = new Adw.ComboRow({
+            title: 'Window Effect',
+            subtitle: 'Visual effect applied to the overlay background.',
+            model: windowEffectModel,
+        });
+        settings.bind('spotlight-window-effect', windowEffectRow, 'selected', Gio.SettingsBindFlags.DEFAULT);
+        spotlightGroup.add(windowEffectRow);
+
+        // Preferred monitor
+        const monitorModel = new Gtk.StringList();
+        monitorModel.append('Auto (Primary)');
+        monitorModel.append('Monitor 1');
+        monitorModel.append('Monitor 2');
+
+        const monitorRow = new Adw.ComboRow({
+            title: 'Preferred Monitor',
+            subtitle: 'Which monitor to show the overlay on.',
+            model: monitorModel,
+        });
+        settings.bind('spotlight-preferred-monitor', monitorRow, 'selected', Gio.SettingsBindFlags.DEFAULT);
+        spotlightGroup.add(monitorRow);
+
+        // Popup at cursor monitor
+        const popupAtCursorRow = new Adw.SwitchRow({
+            title: 'Follow Cursor',
+            subtitle: 'Show overlay on the monitor where the cursor is.',
+        });
+        settings.bind('spotlight-popup-at-cursor-monitor', popupAtCursorRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        spotlightGroup.add(popupAtCursorRow);
+
+        // Blur sigma
+        const blurSigmaRow = new Adw.SpinRow({
+            title: 'Blur Sigma',
+            subtitle: 'Blur radius for background blur effect.',
+            adjustment: new Gtk.Adjustment({
+                lower: 1,
+                upper: 100,
+                step_increment: 1,
+                page_increment: 10,
+            }),
+        });
+        settings.bind('spotlight-blur-sigma', blurSigmaRow, 'value', Gio.SettingsBindFlags.DEFAULT);
+        spotlightGroup.add(blurSigmaRow);
+
         // === About Page ===
         const aboutPage = new Adw.PreferencesPage({
             title: 'About',

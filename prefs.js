@@ -3,6 +3,7 @@ import Gio from 'gi://Gio';
 import Adw from 'gi://Adw';
 import Gtk from 'gi://Gtk';
 import GLib from 'gi://GLib';
+import Gdk from 'gi://Gdk';
 
 function loadIconsMetadata(sourcePath) {
   const filePath = GLib.build_filenamev([sourcePath, 'icons.json']);
@@ -45,6 +46,11 @@ function _createLinkRow(title, url, subtitle) {
 export default class MacTopPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
         const settings = this.getSettings('org.gnome.shell.extensions.mactop');
+
+        // Register extension icons/ directory so Gtk.Image can resolve
+        // 'mactop-symbolic' and other extension-local icon names.
+        const iconTheme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default());
+        iconTheme.add_search_path(GLib.build_filenamev([this.path, 'icons']));
 
         if (window.set_search_enabled) window.set_search_enabled(true);
 

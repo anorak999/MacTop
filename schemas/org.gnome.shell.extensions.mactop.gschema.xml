@@ -58,7 +58,7 @@
       <description>Apply a blurred background effect to the Spotlight overlay. Requires imagemagick to be installed.</description>
     </key>
     <key name="spotlight-background-color" type="s">
-      <default>'rgba(0,0,0,0.8)'</default>
+      <default>'rgba(245,245,247,0.75)'</default>
       <summary>Spotlight Background Color</summary>
       <description>Background color for the Spotlight overlay (CSS rgba format).</description>
     </key>

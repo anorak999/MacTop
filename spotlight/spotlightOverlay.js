@@ -38,7 +38,6 @@ export class SpotlightOverlay {
         this._style = null;
         this._mainContainer = null;
         this._container = null;
-        this._background = null;
         this._entry = null;
         this._search = null;
         this._searchResults = null;
@@ -46,6 +45,9 @@ export class SpotlightOverlay {
         this._searchParent = null;
         this._textChangedEventId = null;
         this._animSeq = null;
+        this._blurEffect = null;
+        this._divider = null;
+        this._resultsChangedId = 0;
     }
 
     enable() {
@@ -68,7 +70,7 @@ export class SpotlightOverlay {
 
         this._mainContainer.add_child(this._container);
 
-        this._setupBackground();
+        this._setupBlurEffect();
 
         Main.layoutManager.addChrome(this._mainContainer, {
             affectsStruts: false,
@@ -105,6 +107,11 @@ export class SpotlightOverlay {
             this._hiTimer = null;
         }
 
+        if (this._blurEffect && this._mainContainer) {
+            this._mainContainer.remove_effect(this._blurEffect);
+            this._blurEffect = null;
+        }
+
         if (this._mainContainer) {
             if (this._mainContainer.get_parent()) {
                 this._mainContainer.get_parent().remove_child(this._mainContainer);
@@ -124,19 +131,20 @@ export class SpotlightOverlay {
         this._release_ui();
     }
 
-    _setupBackground() {
-        if (this._background && this._background.get_parent()) {
-            this._background.get_parent().remove_child(this._background);
+    _setupBlurEffect() {
+        if (this._blurEffect) {
+            this._mainContainer.remove_effect(this._blurEffect);
+            this._blurEffect = null;
         }
-
-        this._background = new St.Widget({
-            name: 'spotlightBackground',
-            layout_manager: new Clutter.BinLayout(),
-            x: 0, y: 0, width: 20, height: 20,
-        });
-        this._mainContainer.insert_child_below(this._background, this._container);
-        this._background.opacity = 0;
-        this._background.visible = false;
+        try {
+            this._blurEffect = new Shell.BlurEffect({
+                sigma: 40,
+                mode: Shell.BlurMode.BACKDROP,
+            });
+            this._mainContainer.add_effect(this._blurEffect);
+        } catch (_e) {
+            this._blurEffect = null;
+        }
     }
 
     show() {
@@ -256,6 +264,16 @@ export class SpotlightOverlay {
         if (this._entry.get_parent()) this._entry.get_parent().remove_child(this._entry);
         this._container.add_child(this._entry);
 
+        // Add divider between entry and results
+        if (!this._divider) {
+            this._divider = new St.Widget({
+                style: 'height: 1px; background-color: rgba(0,0,0,0.12); margin: 2px 0;',
+                x_expand: true,
+            });
+        }
+        if (this._divider.get_parent()) this._divider.get_parent().remove_child(this._divider);
+        this._container.add_child(this._divider);
+
         if (this._search.get_parent()) this._search.get_parent().remove_child(this._search);
         this._container.add_child(this._search);
 
@@ -266,15 +284,25 @@ export class SpotlightOverlay {
 
         this._search._text.get_parent().grab_key_focus();
         this._textChangedEventId = this._search._text.connect('text-changed', () => {
-            this._container.set_size(this._width, this._height);
-            this._mainContainer.set_size(this._width, this._height);
             this._search.show();
+            this._layout();
         });
 
-        this._search._text.get_parent().grab_key_focus();
+        this._resultsChangedId = this._searchResults?.connect('children-changed', () => {
+            this._layout();
+        }) ?? 0;
     }
 
     _release_ui() {
+        if (this._divider && this._divider.get_parent()) {
+            this._divider.get_parent().remove_child(this._divider);
+        }
+
+        if (this._resultsChangedId && this._searchResults) {
+            this._searchResults.disconnect(this._resultsChangedId);
+            this._resultsChangedId = 0;
+        }
+
         if (this._entry) {
             if (this._entry.get_parent()) this._entry.get_parent().remove_child(this._entry);
             this._entryParent?.add_child(this._entry);
@@ -328,30 +356,67 @@ export class SpotlightOverlay {
         this._queryDisplay();
         if (!this._monitor) return;
 
-        this._width = Math.min(600, this._sw * 0.8);
-        this._height = Math.min(500, this._sh * 0.7);
+        this._width = Math.min(720, this._sw * 0.55);
 
-        let x = this._monitor.x + this._sw / 2 - this._width / 2;
-        let y = this._monitor.y + this._sh / 2 - this._height / 2;
+        // Count visible result children for dynamic height
+        const resultChildren = this._searchResults?.get_children() ?? [];
+        const nResults = resultChildren.filter(c => c.visible).length;
 
-        this._container.set_size(this._width, this._height);
-        this._mainContainer.set_size(this._width, this._height);
-        this._mainContainer.set_position(x, y);
+        const BAR_ONLY_HEIGHT = 70;
+        const ROW_HEIGHT = 42;
+        const MAX_RESULTS_HEIGHT = 360;
 
-        if (this._background) {
-            this._background.set_position(0, 0);
-            this._background.set_size(this._sw, this._sh);
+        const resultsHeight = nResults > 0
+            ? Math.min(nResults * ROW_HEIGHT, MAX_RESULTS_HEIGHT)
+            : 0;
+        this._height = BAR_ONLY_HEIGHT + resultsHeight;
+
+        let x = this._monitor.x + (this._sw - this._width) / 2;
+        let y = this._monitor.y + this._sh * 0.30;
+
+        const animate = this._settings?.get_boolean('spotlight-use-animations') && this._visible;
+
+        if (animate) {
+            this._container.ease({
+                width: this._width,
+                height: this._height,
+                duration: 200,
+                mode: Clutter.AnimationMode.EASE_OUT,
+            });
+            this._mainContainer.ease({
+                width: this._width,
+                height: this._height,
+                x: x,
+                y: y,
+                duration: 200,
+                mode: Clutter.AnimationMode.EASE_OUT,
+            });
+        } else {
+            this._container.set_size(this._width, this._height);
+            this._mainContainer.set_size(this._width, this._height);
+            this._mainContainer.set_position(x, y);
+        }
+
+        // Show divider only when results are present
+        if (this._divider) {
+            this._divider.visible = nResults > 0;
         }
     }
 
     _updateCss() {
-        let bgColor = this._settings?.get_string('spotlight-background-color') || 'rgba(0,0,0,0.8)';
-        let iconColor = this._settings?.get_string('spotlight-panel-icon-color') || 'rgba(255,255,255,1)';
+        let bgColor = this._settings?.get_string('spotlight-background-color') || 'rgba(245,245,247,0.75)';
+        let iconColor = this._settings?.get_string('spotlight-panel-icon-color') || 'rgba(33,33,33,1)';
 
         let styles = [
-            `#spotlightSearch { background: ${bgColor}; border-radius: 12px; }`,
-            `#spotlightBox { padding: 20px; }`,
-            `.spotlight > * { font-size: 16pt; }`,
+            `#spotlightSearch { background: ${bgColor}; border-radius: 20px; border: 1px solid rgba(255,255,255,0.5); box-shadow: 0 8px 32px rgba(0,0,0,0.12); }`,
+            `#spotlightBox { padding: 12px 16px; }`,
+            `.spotlight > * { font-size: 16pt; color: #333; }`,
+            `.spotlight-entry { color: #333; caret-color: #333; background-color: rgba(0,0,0,0.05); }`,
+            `.spotlight-entry:focus { background-color: rgba(0,0,0,0.08); }`,
+            `.spotlight-result-name { color: #333; }`,
+            `.spotlight-result-description { color: #666; }`,
+            `.spotlight-result-item:hover, .spotlight-result-item:focus { background-color: rgba(0,0,0,0.06); }`,
+            `.spotlight-placeholder, .spotlight-error { color: #999; }`,
             `.panel-status-indicator-icon { color: ${iconColor}; }`,
         ];
 

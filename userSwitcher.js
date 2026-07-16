@@ -23,6 +23,13 @@ const DEFAULT_BUTTON_ICON = 'system-users-symbolic';
 const AVATAR_ICON_SIZE = 64;
 const MINIMUM_VISIBLE_UID = 1000;
 
+function getDisplayName() {
+    const realName = GLib.get_real_name();
+    const userName = GLib.get_user_name();
+    if (realName && realName !== userName) return realName;
+    return userName;
+}
+
 function countRealUsers(userManager) {
     if (!userManager || !userManager.is_loaded) return 0;
 
@@ -169,7 +176,7 @@ export const UserSwitcherButton = GObject.registerClass(
             });
 
             this._usernameLabel = new St.Label({
-                text: GLib.get_user_name(),
+                text: getDisplayName(),
                 style_class: 'panel-button-label',
                 y_align: Clutter.ActorAlign.CENTER,
             });
@@ -215,28 +222,54 @@ export const UserSwitcherButton = GObject.registerClass(
             const mode = this._extension?._settings?.get_string('user-switcher-display-mode') ?? 'both';
             switch (mode) {
                 case 'username':
-                    this._buttonIcon.visible = false;
-                    this._usernameLabel.visible = true;
+                    this._slideIn(this._usernameLabel);
+                    this._slideOut(this._buttonIcon);
                     break;
                 case 'both':
-                    this._buttonIcon.visible = true;
-                    this._usernameLabel.visible = true;
+                    this._slideIn(this._usernameLabel);
+                    this._slideIn(this._buttonIcon);
                     break;
                 case 'icon':
                 default:
-                    this._buttonIcon.visible = true;
-                    this._usernameLabel.visible = false;
+                    this._slideOut(this._usernameLabel);
+                    this._slideIn(this._buttonIcon);
                     break;
             }
+        }
 
-            // A visibility flip on a child doesn't always prompt the panel's
-            // box (leftBox/centerBox/rightBox) to re-query this button's
-            // preferred width, which can leave the newly-shown widget
-            // clipped to the previous allocation. Queue an explicit relayout
-            // on both the inner content box and the button itself so the
-            // panel picks up the new natural size immediately.
-            this._contentBox?.queue_relayout();
-            this.queue_relayout();
+        _slideIn(actor) {
+            if (!actor || actor.visible && actor.translation_x === 0) return;
+            const [, naturalWidth] = actor.get_preferred_width(-1);
+            actor.set_width(naturalWidth);
+            actor.translation_x = naturalWidth;
+            actor.visible = true;
+            actor.ease({
+                translation_x: 0,
+                duration: 200,
+                mode: Clutter.AnimationMode.EASE_OUT,
+                onComplete: () => {
+                    actor.set_width(-1);
+                    this._contentBox?.queue_relayout();
+                    this.queue_relayout();
+                },
+            });
+        }
+
+        _slideOut(actor) {
+            if (!actor || !actor.visible) return;
+            const [, naturalWidth] = actor.get_preferred_width(-1);
+            actor.ease({
+                translation_x: naturalWidth,
+                duration: 200,
+                mode: Clutter.AnimationMode.EASE_OUT,
+                onComplete: () => {
+                    actor.visible = false;
+                    actor.translation_x = 0;
+                    actor.set_width(-1);
+                    this._contentBox?.queue_relayout();
+                    this.queue_relayout();
+                },
+            });
         }
 
         destroy() {
@@ -608,7 +641,7 @@ export const UserSwitcherButton = GObject.registerClass(
         _updatePanelIcon(_users, _currentUserName) {
             this._buttonIcon.gicon = null;
             this._buttonIcon.icon_name = DEFAULT_BUTTON_ICON;
-            this._usernameLabel.text = _currentUserName;
+            this._usernameLabel.text = getDisplayName();
         }
     }
 );

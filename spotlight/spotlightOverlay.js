@@ -198,7 +198,7 @@ export class SpotlightOverlay {
   }
 
   _loadSettings() {
-    this.background_color = this._getArray('spotlight-background-color', [0, 0, 0, 0.5]);
+    this.background_color = this._getArray('spotlight-background-color', [0, 0, 0, 0]);
     this.border_radius = this._settings.get_int('spotlight-border-radius');
     this.border_thickness = this._settings.get_int('spotlight-border-thickness');
     this.border_color = this._getArray('spotlight-border-color', [1, 1, 1, 1]);
@@ -208,7 +208,7 @@ export class SpotlightOverlay {
     this.entry_font_size = this._settings.get_int('spotlight-entry-font-size');
     this.text_color = this._getArray('spotlight-text-color', [1, 1, 1, 0]);
     this.entry_text_color = this._getArray('spotlight-entry-text-color', [1, 1, 1, 0]);
-    this.panel_icon_color = this._getArray('spotlight-panel-icon-color', [1, 1, 1, 1]);
+    this.panel_icon_color = this._getArray('spotlight-panel-icon-color', [1, 1, 1, 0]);
     this.window_effect = this._settings.get_int('spotlight-window-effect');
     this.window_effect_color = this._getArray('spotlight-window-effect-color', [1, 1, 1, 1]);
     this.preferred_monitor = this._settings.get_int('spotlight-preferred-monitor');
@@ -218,9 +218,10 @@ export class SpotlightOverlay {
     this.blur_brightness = this._settings.get_double('spotlight-blur-brightness');
     this.use_animations = this._settings.get_boolean('spotlight-use-animations');
     this.animation_speed = this._settings.get_int('spotlight-animation-speed');
+    this.theme = this._settings.get_string('spotlight-theme');
 
     const settingsMap = {
-      'spotlight-background-color': () => { this.background_color = this._getArray('spotlight-background-color', [0, 0, 0, 0.5]); this._updateBlurredBackground(); this._updateCss(); },
+      'spotlight-background-color': () => { this.background_color = this._getArray('spotlight-background-color', [0, 0, 0, 0]); this._updateBlurredBackground(); this._updateCss(); },
       'spotlight-border-radius': () => { this.border_radius = this._settings.get_int('spotlight-border-radius'); this._updateCss(); },
       'spotlight-border-thickness': () => { this.border_thickness = this._settings.get_int('spotlight-border-thickness'); this._updateCss(); },
       'spotlight-border-color': () => { this.border_color = this._getArray('spotlight-border-color', [1, 1, 1, 1]); this._updateCss(); },
@@ -230,7 +231,7 @@ export class SpotlightOverlay {
       'spotlight-entry-font-size': () => { this.entry_font_size = this._settings.get_int('spotlight-entry-font-size'); this._updateCss(); },
       'spotlight-text-color': () => { this.text_color = this._getArray('spotlight-text-color', [1, 1, 1, 0]); this._updateCss(); },
       'spotlight-entry-text-color': () => { this.entry_text_color = this._getArray('spotlight-entry-text-color', [1, 1, 1, 0]); this._updateCss(); },
-      'spotlight-panel-icon-color': () => { this.panel_icon_color = this._getArray('spotlight-panel-icon-color', [1, 1, 1, 1]); this._updateCss(); },
+      'spotlight-panel-icon-color': () => { this.panel_icon_color = this._getArray('spotlight-panel-icon-color', [1, 1, 1, 0]); this._updateCss(); },
       'spotlight-window-effect': () => { this.window_effect = this._settings.get_int('spotlight-window-effect'); this._updateWindowEffect(); },
       'spotlight-window-effect-color': () => {
         this.window_effect_color = this._getArray('spotlight-window-effect-color', [1, 1, 1, 1]);
@@ -243,7 +244,7 @@ export class SpotlightOverlay {
       'spotlight-blur-brightness': () => { this.blur_brightness = this._settings.get_double('spotlight-blur-brightness'); this._updateBlurredBackground(); },
       'spotlight-use-animations': () => { this.use_animations = this._settings.get_boolean('spotlight-use-animations'); },
       'spotlight-animation-speed': () => { this.animation_speed = this._settings.get_int('spotlight-animation-speed'); },
-      'spotlight-theme': () => { this._updateCss(); },
+      'spotlight-theme': () => { this.theme = this._settings.get_string('spotlight-theme'); this._updateCss(); },
     };
 
     for (const [key, handler] of Object.entries(settingsMap)) {
@@ -624,16 +625,40 @@ export class SpotlightOverlay {
     }
   }
 
+  _themeDefaults() {
+    // Glassmorphism presets. Each value is [r, g, b, a] in 0.0-1.0.
+    // Dark: deep translucent panel, light text. Light: frosted white, dark text.
+    if (this.theme === 'light') {
+      return {
+        background: [0.95, 0.95, 0.97, 0.72],
+        text: [0.05, 0.05, 0.06, 1.0],
+        panelIcon: [0.05, 0.05, 0.06, 1.0],
+      };
+    }
+    return {
+      background: [0.05, 0.05, 0.07, 0.55],
+      text: [1.0, 1.0, 1.0, 1.0],
+      panelIcon: [1.0, 1.0, 1.0, 1.0],
+    };
+  }
+
+  _themeColor(prop, fallback) {
+    // User-set value (alpha > 0) always wins; otherwise use theme preset.
+    let v = this[prop];
+    if (v && v[3] > 0) return v;
+    return this._themeDefaults()[fallback];
+  }
+
   _updateCss() {
-    let bg = this.background_color || [0, 0, 0, 0.5];
-    if (this.text_color && this.text_color[3] > 0) {
-      this._container.remove_style_class_name('light');
+    let bg = this._themeColor('background_color', 'background');
+    let textColor = this._themeColor('text_color', 'text');
+    let panelIconColor = this._themeColor('panel_icon_color', 'panelIcon');
+    let isLight = this.theme === 'light';
+
+    if (isLight) {
+      this._container.add_style_class_name('light');
     } else {
-      if (0.3 * bg[0] + 0.59 * bg[1] + 0.11 * bg[2] < 0.5) {
-        this._container.remove_style_class_name('light');
-      } else {
-        this._container.add_style_class_name('light');
-      }
+      this._container.remove_style_class_name('light');
     }
 
     this._background.remove_effect_by_name('blur');
@@ -650,7 +675,7 @@ export class SpotlightOverlay {
       let ss = [];
 
       if (!this.blur_background) {
-        let clr = this._style.rgba(this.background_color);
+        let clr = this._style.rgba(bg);
         ss.push(`\n  background: rgba(${clr});`);
       }
 
@@ -708,20 +733,22 @@ export class SpotlightOverlay {
       }
     }
 
-    let clr = this._style.rgba(this.text_color);
-    if ((this.text_color || [1, 1, 1, 1])[3] > 0) {
+    let clr = this._style.rgba(textColor);
+    if (textColor[3] > 0) {
       styles.push(`#spotlightBox * { color: rgba(${clr}) !important }`);
     }
 
     {
       let ss = [];
       {
-        let clr = this._style.rgba(this.panel_icon_color);
-        if (this.panel_icon_color[3] > 0) {
+        let clr = this._style.rgba(panelIconColor);
+        if (panelIconColor[3] > 0) {
           ss.push(`\n  color: rgba(${clr}) !important;`);
         }
       }
-      styles.push(`.system-status-icon {${ss.join(' ')}}`);
+      // Scoped to the spotlight indicator's own icon — never touch the global
+      // .system-status-icon class, which recolors every native top-bar icon.
+      styles.push(`.mactop-spotlight-icon {${ss.join(' ')}}`);
     }
 
     this._style?.build('mactop-spotlight', styles);

@@ -5,6 +5,8 @@ import Gtk from 'gi://Gtk';
 import GLib from 'gi://GLib';
 import Gdk from 'gi://Gdk';
 
+import { ShortcutButton } from './spotlight/shortcutButton.js';
+
 function loadIconsMetadata(sourcePath) {
   const filePath = GLib.build_filenamev([sourcePath, 'icons.json']);
   try {
@@ -193,10 +195,17 @@ export default class MacTopPreferences extends ExtensionPreferences {
         spotlightGroup.add(blurBackgroundRow);
 
         // Keybinding
-        const keybindingRow = new Adw.EntryRow({
+        const keybindingRow = new Adw.ActionRow({
             title: 'Keyboard Shortcut',
+            subtitle: 'Global shortcut to toggle Spotlight search.',
         });
-        settings.bind('spotlight-keybinding', keybindingRow, 'text', Gio.SettingsBindFlags.DEFAULT);
+        const shortcutButton = new ShortcutButton(
+            settings,
+            'spotlight-keybinding',
+            window,
+        );
+        keybindingRow.add_suffix(shortcutButton);
+        keybindingRow.activatable_widget = shortcutButton;
         spotlightGroup.add(keybindingRow);
 
         // Theme

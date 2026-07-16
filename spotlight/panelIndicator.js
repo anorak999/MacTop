@@ -17,7 +17,9 @@ export class SpotlightIndicator {
       style_class: 'panel-status-indicators-box',
     });
     let icon = new St.Icon({
-      style_class: 'panel-status-indicator-icon',
+      // 'mactop-spotlight-icon' is a unique hook so the overlay can recolor
+      // *only* this icon without touching native .system-status-icon elements.
+      style_class: 'panel-status-indicator-icon mactop-spotlight-icon',
       gicon: new Gio.ThemedIcon({ name: 'search-symbolic' }),
     });
     icon.style = 'margin-top: 6px !important; margin-bottom: 6px !important;';

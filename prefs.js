@@ -430,6 +430,12 @@ export default class MacTopPreferences extends ExtensionPreferences {
         });
         headerBox.append(descLabel);
 
+        const authorLabel = new Gtk.Label({
+            label: `by ${metadata.author || 'anorak999'}`,
+            margin_top: 4,
+        });
+        headerBox.append(authorLabel);
+
         aboutGroup.add(headerBox);
 
         // Links

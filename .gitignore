@@ -25,3 +25,14 @@ node_modules/
 # Cloned repos (reference only)
 MacTop/
 temp/
+
+# Test files
+test_align.js
+
+# Screenshots
+*.png
+*.jpg
+*.jpeg
+
+# Logs
+*.log

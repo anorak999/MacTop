@@ -1,4 +1,4 @@
-# MacTop
+# MacTop v2.5
 
 A macOS-inspired global menu for GNOME Shell — places a clean, unified application menu into the top panel with window actions, navigation controls, quick-access shortcuts, and a fast user switcher.
 
@@ -18,11 +18,11 @@ A macOS-inspired global menu for GNOME Shell — places a clean, unified applica
 
 ## Performance
 
-- **Debounced focus events** — 50ms GLib timeout prevents rebuild storms during rapid window switching (Alt+Tab animation fires the signal 5–10x per transition)
-- **In-place panel updates** — existing buttons are reused and relabeled instead of destroyed and recreated (zero widget churn at steady state)
-- **Cached static menus** — File/Edit/View/Go/Window/Help menus computed once at module load, never rebuilt per focus change
-- **Cached blacklist** — pre-lowercased with early exit when empty (no string ops in the common case)
-- **Cached virtual keyboard device** — single Clutter device reused across all shortcut actions instead of allocating one per invocation
+- **Debounced focus events** — 50ms GLib timeout prevents rebuild storms during rapid window switching
+- **In-place panel updates** — existing buttons are reused and relabeled instead of destroyed and recreated
+- **Cached static menus** — File/Edit/View/Go/Window/Help menus computed once at module load
+- **Cached blacklist** — pre-lowercased with early exit when empty
+- **Cached virtual keyboard device** — single Clutter device reused across all shortcut actions
 
 ## Requirements
 
@@ -75,7 +75,7 @@ MacTop/
 │   ├── goMenu.js             # Go menu definition
 │   ├── windowMenu.js         # Window menu definition
 │   └── helpMenu.js           # Help menu definition
-├── spotlight/                # Spotlight search overlay (ported from search-light)
+├── spotlight/                # Spotlight search overlay
 │   ├── spotlightOverlay.js   # Main overlay widget
 │   ├── panelIndicator.js     # Panel button icon
 │   ├── keybinding.js         # Global keybinding grab/release

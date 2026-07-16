@@ -161,6 +161,7 @@ export default class MacTopExtension extends Extension {
         }
 
         if (this._settings) {
+            this._settings.disconnectObject(this);
             this._settings = null;
         }
     }

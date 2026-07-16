@@ -86,6 +86,35 @@ export default class MacTopPreferences extends ExtensionPreferences {
         settings.bind('show-user-switcher', showUserSwitcherRow, 'active', Gio.SettingsBindFlags.DEFAULT);
         group.add(showUserSwitcherRow);
 
+        // User switcher display mode
+        const displayModeModel = new Gtk.StringList();
+        displayModeModel.append('Icon');
+        displayModeModel.append('Username');
+        displayModeModel.append('Both');
+
+        const displayModeRow = new Adw.ComboRow({
+            title: 'User Switcher Display',
+            subtitle: 'Show icon, username, or both in the panel button.',
+            model: displayModeModel,
+        });
+
+        const displayModeMap = { 'icon': 0, 'username': 1, 'both': 2 };
+        const reverseDisplayModeMap = ['icon', 'username', 'both'];
+
+        const currentMode = settings.get_string('user-switcher-display-mode');
+        displayModeRow.selected = displayModeMap[currentMode] ?? 0;
+
+        displayModeRow.connect('notify::selected', () => {
+            settings.set_string('user-switcher-display-mode', reverseDisplayModeMap[displayModeRow.selected]);
+        });
+
+        settings.connect('changed::user-switcher-display-mode', () => {
+            const mode = settings.get_string('user-switcher-display-mode');
+            displayModeRow.selected = displayModeMap[mode] ?? 0;
+        });
+
+        group.add(displayModeRow);
+
         // Spotlight group
         const spotlightGroup = new Adw.PreferencesGroup();
         spotlightGroup.title = 'Spotlight Search';
@@ -124,16 +153,14 @@ export default class MacTopPreferences extends ExtensionPreferences {
 
         // Background color
         const bgColorRow = new Adw.EntryRow({
-            title: 'Background Color',
-            subtitle: 'CSS rgba format (e.g., rgba(0,0,0,0.8))',
+            title: 'Background Color (CSS rgba)',
         });
         settings.bind('spotlight-background-color', bgColorRow, 'text', Gio.SettingsBindFlags.DEFAULT);
         spotlightGroup.add(bgColorRow);
 
         // Panel icon color
         const iconColorRow = new Adw.EntryRow({
-            title: 'Panel Icon Color',
-            subtitle: 'CSS rgba format (e.g., rgba(255,255,255,1))',
+            title: 'Panel Icon Color (CSS rgba)',
         });
         settings.bind('spotlight-panel-icon-color', iconColorRow, 'text', Gio.SettingsBindFlags.DEFAULT);
         spotlightGroup.add(iconColorRow);

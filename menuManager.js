@@ -241,16 +241,20 @@ export class MenuManager {
         this._lastAppMenuData = null;
 
         // Listen for settings changes
+        this._settingsSignalIds = [];
         if (this._settings) {
-            this._settings.connect('changed::show-os-icon', () => {
-                this._cachedShowOsIcon = this._settings.get_boolean('show-os-icon');
-                this._updateOsIconVisibility();
-            });
-            this._settings.connect('changed::menu-icon', () => {
-                this._cachedMenuIcon = this._settings.get_string('menu-icon');
-                // Invalidate app cache so slot 0 updates on next focus change
-                this._lastAppId = null;
-            });
+            this._settingsSignalIds.push(
+                this._settings.connect('changed::show-os-icon', () => {
+                    this._cachedShowOsIcon = this._settings.get_boolean('show-os-icon');
+                    this._updateOsIconVisibility();
+                })
+            );
+            this._settingsSignalIds.push(
+                this._settings.connect('changed::menu-icon', () => {
+                    this._cachedMenuIcon = this._settings.get_string('menu-icon');
+                    this._lastAppId = null;
+                })
+            );
         }
     }
 
@@ -422,6 +426,10 @@ export class MenuManager {
     }
 
     destroy() {
+        if (this._settingsSignalIds && this._settings) {
+            this._settingsSignalIds.forEach(id => this._settings.disconnect(id));
+            this._settingsSignalIds = [];
+        }
         this.clear();
         this._virtualDevice = null;
     }

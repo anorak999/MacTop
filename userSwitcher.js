@@ -134,7 +134,9 @@ export class UserSwitcherController {
 
         if (shouldShow && !this._userSwitcher) {
             this._userSwitcher = new UserSwitcherButton(this._extension);
-            Main.panel.addToStatusArea('MacTopUserSwitcher', this._userSwitcher, 1, 'right');
+            // Position 10 on right side places it left of system status (network, volume, etc.)
+            // Higher numbers = more leftward on right panel
+            Main.panel.addToStatusArea('MacTopUserSwitcher', this._userSwitcher, 10, 'right');
         } else if (!shouldShow && this._userSwitcher) {
             this._userSwitcher.destroy();
             this._userSwitcher = null;
@@ -174,10 +176,17 @@ export const UserSwitcherButton = GObject.registerClass(
             });
             this.add_child(this._usernameLabel);
 
+            this._updateDisplayMode();
+            this._settingsChangedId = this._extension?._settings?.connect('changed::user-switcher-display-mode', () => {
+                this._updateDisplayMode();
+            }) ?? 0;
+
+            // Configure menu alignment to appear on the right side of the button
             if (this.menu?.actor) {
                 this.menu.actor.add_style_class_name('mactop-user-switcher-menu');
                 this.menu.actor.set_x_align(Clutter.ActorAlign.END);
                 this.menu.actor.set_x_expand(false);
+                // Ensure menu opens to the left of the button (right-aligned)
                 if (typeof this.menu.setSourceAlignment === 'function') {
                     this.menu.setSourceAlignment(1);
                 }
@@ -190,8 +199,32 @@ export const UserSwitcherButton = GObject.registerClass(
             this._initUserManager();
         }
 
+        _updateDisplayMode() {
+            const mode = this._extension?._settings?.get_string('user-switcher-display-mode') ?? 'icon';
+            switch (mode) {
+                case 'username':
+                    this._buttonIcon.visible = false;
+                    this._usernameLabel.visible = true;
+                    break;
+                case 'both':
+                    this._buttonIcon.visible = true;
+                    this._usernameLabel.visible = true;
+                    break;
+                case 'icon':
+                default:
+                    this._buttonIcon.visible = true;
+                    this._usernameLabel.visible = false;
+                    break;
+            }
+        }
+
         destroy() {
             this._isDestroyed = true;
+
+            if (this._settingsChangedId && this._extension?._settings) {
+                this._extension._settings.disconnect(this._settingsChangedId);
+                this._settingsChangedId = 0;
+            }
 
             if (this._cancellable) {
                 this._cancellable.cancel();
@@ -249,6 +282,7 @@ export const UserSwitcherButton = GObject.registerClass(
             const users = this._collectVisibleUsers(currentUserName);
             const sessionInfo = await this._getSessionInfo();
             if (this._isDestroyed || !this.menu) return;
+            this._lastSessionInfo = sessionInfo;
 
             if (users.length === 0) {
                 const placeholder = new PopupMenu.PopupMenuItem('No eligible user accounts found');
@@ -320,26 +354,6 @@ export const UserSwitcherButton = GObject.registerClass(
             return this._loginManagerProxyPromise;
         }
 
-        async _getSessionProperty(sessionPath, propertyName) {
-            if (typeof sessionPath !== 'string' || !sessionPath.startsWith('/org/freedesktop/login1/session/')) {
-                return null;
-            }
-            try {
-                const sessionProxy = await Gio.DBusProxy.new(
-                    Gio.DBus.system, Gio.DBusProxyFlags.GET_INVALIDATED_PROPERTIES, null,
-                    'org.freedesktop.login1', sessionPath,
-                    'org.freedesktop.login1.Session', this._cancellable
-                );
-                if (this._isDestroyed || !sessionProxy) return null;
-                const variant = sessionProxy.get_cached_property(propertyName);
-                return variant?.deepUnpack?.() ?? null;
-            } catch (error) {
-                if (error?.matches?.(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED)) return null;
-                logError(error, `Failed to read session ${propertyName}`);
-                return null;
-            }
-        }
-
         async _getSessionInfo() {
             const loggedInUsers = new Set();
             const sessions = new Map();
@@ -362,12 +376,23 @@ export const UserSwitcherButton = GObject.registerClass(
                     const sessionPathStr = Array.isArray(sessionPath) ? sessionPath[0] : sessionPath;
                     if (typeof sessionPathStr !== 'string' || !sessionPathStr.startsWith('/org/freedesktop/login1/session/')) continue;
 
-                    const sessionClass = await this._getSessionProperty(sessionPathStr, 'Class');
-                    if (this._isDestroyed) return {loggedInUsers, sessions};
+                    // Create one proxy per session, reuse for both property reads
+                    let sessionProxy;
+                    try {
+                        sessionProxy = await Gio.DBusProxy.new(
+                            Gio.DBus.system, Gio.DBusProxyFlags.GET_INVALIDATED_PROPERTIES, null,
+                            'org.freedesktop.login1', sessionPathStr,
+                            'org.freedesktop.login1.Session', this._cancellable
+                        );
+                    } catch (_e) {
+                        continue;
+                    }
+                    if (this._isDestroyed || !sessionProxy) return {loggedInUsers, sessions};
+
+                    const sessionClass = sessionProxy.get_cached_property('Class')?.deepUnpack?.() ?? null;
                     if (sessionClass !== 'user') continue;
 
-                    const isActive = await this._getSessionProperty(sessionPathStr, 'Active');
-                    if (this._isDestroyed) return {loggedInUsers, sessions};
+                    const isActive = sessionProxy.get_cached_property('Active')?.deepUnpack?.() ?? false;
 
                     const existing = sessions.get(userName);
                     if (!existing || (isActive === true && existing.isActive !== true)) {
@@ -508,14 +533,14 @@ export const UserSwitcherButton = GObject.registerClass(
             const currentUserName = GLib.get_user_name();
             if (username === currentUserName) return;
 
-            const activated = await this._activateUserSession(username);
+            const activated = await this._activateUserSession(username, this._lastSessionInfo);
             if (this._isDestroyed) return;
 
             if (!activated) this._gotoLoginWindow();
         }
 
-        async _activateUserSession(username) {
-            const {sessions} = await this._getSessionInfo();
+        async _activateUserSession(username, cachedSessionInfo) {
+            const {sessions} = cachedSessionInfo || await this._getSessionInfo();
             if (this._isDestroyed) return false;
 
             const sessionData = sessions.get(username);

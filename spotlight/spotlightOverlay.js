@@ -12,7 +12,6 @@ import St from 'gi://St';
 
 import { Timer } from './timer.js';
 import { Style } from './style.js';
-import { TintEffect } from './effects/tint_effect.js';
 
 /**
  * Main overlay container for spotlight search.
@@ -36,7 +35,6 @@ export class SpotlightOverlay {
         this._visible = false;
         this._inOverview = false;
         this._hiTimer = null;
-        this._loTimer = null;
         this._style = null;
         this._mainContainer = null;
         this._container = null;
@@ -55,9 +53,6 @@ export class SpotlightOverlay {
 
         this._hiTimer = new Timer('spotlight-hi-res');
         this._hiTimer.initialize(15);
-
-        this._loTimer = new Timer('spotlight-lo-res');
-        this._loTimer.initialize(750);
 
         this._mainContainer = new SpotlightWidget();
         this._mainContainer._delegate = this;
@@ -108,10 +103,6 @@ export class SpotlightOverlay {
         if (this._hiTimer) {
             this._hiTimer.shutdown();
             this._hiTimer = null;
-        }
-        if (this._loTimer) {
-            this._loTimer.shutdown();
-            this._loTimer = null;
         }
 
         if (this._mainContainer) {
@@ -223,7 +214,7 @@ export class SpotlightOverlay {
             this.show();
             if (this._entry) global.stage.set_key_focus(this._entry);
         } else {
-            global.stage.set_key_focus(null);
+            this.hide();
         }
     }
 
@@ -388,12 +379,12 @@ export class SpotlightOverlay {
 
     _onKeyPressed(_obj, evt) {
         if (!this._entry) return;
+        if (evt.get_key_symbol() === Clutter.KEY_Escape) {
+            this.hide();
+            return Clutter.EVENT_STOP;
+        }
         let focus = global.stage.get_key_focus();
         if (!focus || !this._entry.contains(focus)) {
-            if (evt.get_key_symbol() === Clutter.KEY_Escape) {
-                this.hide();
-                return Clutter.EVENT_STOP;
-            }
             this._search?._text.get_parent().grab_key_focus();
         }
         return Clutter.EVENT_STOP;

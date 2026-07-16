@@ -1,5 +1,4 @@
 import Gio from 'gi://Gio';
-import GLib from 'gi://GLib';
 
 const NAUTILUS_PREFS = 'org.gnome.nautilus.preferences';
 const _settings = new Gio.Settings({ schema_id: NAUTILUS_PREFS });
@@ -28,19 +27,13 @@ function gsettingsToggle(key) {
  * a re-render of the current directory listing.
  */
 function applyNautilusSetting(key, value) {
-    // Primary: direct GSettings write (in-process, fastest)
     gsettingsSet(key, value);
-
-    // Secondary: command-line gsettings ensure D-Bus signal fires
-    // even if the Gio.Settings instance is stale
-    GLib.spawn_command_line_async(`gsettings set org.gnome.nautilus.preferences ${key} '${value}'`);
+    _settings.sync();
 }
 
 function toggleNautilusSetting(key) {
-    const current = _settings.get_boolean(key);
-    const newValue = !current;
     gsettingsToggle(key);
-    GLib.spawn_command_line_async(`gsettings set org.gnome.nautilus.preferences ${key} ${newValue}`);
+    _settings.sync();
 }
 
 export const viewActions = {

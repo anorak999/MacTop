@@ -2,6 +2,47 @@ import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import * as SC from './scancodes.js';
 
+/**
+ * Get the focused Nautilus window.
+ */
+function getNautilusWindow() {
+    try {
+        const focusedWindow = global.display.get_focus_window();
+        if (!focusedWindow) return null;
+        const wmClass = (focusedWindow.get_wm_class() || '').toLowerCase();
+        if (!wmClass.includes('nautilus')) return null;
+        return focusedWindow;
+    } catch (e) {
+        return null;
+    }
+}
+
+/**
+ * Ensure Nautilus window is focused before sending keys.
+ * Returns the Nautilus window if found and focused, null otherwise.
+ */
+function ensureNautilusFocused() {
+    const nautilusWindow = getNautilusWindow();
+    if (nautilusWindow) {
+        // Window is already focused
+        return nautilusWindow;
+    }
+    // Try to find and focus a Nautilus window
+    try {
+        const windows = global.display.get_tab_list(Meta.TabList.NORMAL, null);
+        for (const win of windows) {
+            const wmClass = (win.get_wm_class() || '').toLowerCase();
+            if (wmClass.includes('nautilus')) {
+                win.activate(global.get_current_time());
+                return win;
+            }
+        }
+    } catch (e) {
+        // ignore
+    }
+    return null;
+}
+
 // Each entry: [modifierScanCode, actionScanCode, useModifier]
 // useModifier=false means only the action key is pressed (no Ctrl/Shift/Alt held)
 const SHORTCUT_MAP = {
@@ -87,6 +128,14 @@ export function executeKeyboardAction(action, manager) {
     if (!entry) return false;
 
     try {
+        // Ensure Nautilus is focused before sending keys
+        const nautilusWindow = ensureNautilusFocused();
+        if (!nautilusWindow) {
+            console.warn('[mactop] No Nautilus window found to send keys to');
+            return false;
+        }
+
+        // Small delay to ensure focus has switched
         const device = vd || (() => {
             const seat = Clutter.get_default_backend().get_default_seat();
             return seat.create_virtual_device(Clutter.InputDeviceType.KEYBOARD_DEVICE);

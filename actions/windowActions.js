@@ -62,13 +62,7 @@ export const windowActions = {
         const focused = actors.find(a => a.meta_window.has_focus());
         if (focused) focused.meta_window.move_to_monitor(1);
     },
-
-    'bring-all-front': () => {
-        const actors = global.get_window_actors();
-        actors.forEach(a => {
-            if (a.meta_window.is_minimized()) {
-                a.meta_window.activate(global.get_current_time());
-            }
-        });
-    },
 };
+
+// Alias: bring-all-front is identical to show-all
+windowActions['bring-all-front'] = windowActions['show-all'];

@@ -5,24 +5,55 @@ const HOME = GLib.get_home_dir();
 const specialDir = (d) => GLib.get_user_special_dir(d) || `${HOME}/${d === GLib.UserDirectory.DIRECTORY_DOCUMENTS ? 'Documents' : d === GLib.UserDirectory.DIRECTORY_DESKTOP ? 'Desktop' : 'Downloads'}`;
 
 /**
- * Get the currently focused Nautilus window's URI.
- * Returns null if Nautilus is not focused or cannot determine URI.
+ * Nautilus DBus proxy for activating actions.
+ * Cached to avoid repeated proxy creation.
  */
-function getNautilusCurrentUri() {
-    try {
-        const focusedWindow = global.display.get_focus_window();
-        if (!focusedWindow) return null;
-        const wmClass = (focusedWindow.get_wm_class() || '').toLowerCase();
-        if (!wmClass.includes('nautilus')) return null;
+let _nautilusProxy = null;
+let _nautilusProxyPromise = null;
 
-        // Try to get URI from window title (Nautilus shows "foldername - Files")
-        const title = focusedWindow.get_title() || '';
-        // Nautilus title format: "foldername - Files" or "Files"
-        // We can't reliably get the URI from title, so return null
-        // and let callers use HOME as fallback
-        return null;
+async function getNautilusProxy() {
+    if (_nautilusProxy) return _nautilusProxy;
+    if (_nautilusProxyPromise) return _nautilusProxyPromise;
+
+    _nautilusProxyPromise = (async () => {
+        try {
+            const proxy = await Gio.DBusProxy.new(
+                Gio.DBus.session, Gio.DBusProxyFlags.NONE, null,
+                'org.gnome.Nautilus', '/org/gnome/Nautilus',
+                'org.gtk.Actions', null
+            );
+            _nautilusProxy = proxy;
+            return proxy;
+        } catch (e) {
+            console.error(`[mactop] Failed to get Nautilus DBus proxy: ${e}`);
+            _nautilusProxy = null;
+            return null;
+        } finally {
+            _nautilusProxyPromise = null;
+        }
+    })();
+
+    return _nautilusProxyPromise;
+}
+
+/**
+ * Activate a Nautilus action via DBus.
+ * Returns true if successful, false otherwise.
+ */
+async function activateNautilusAction(actionName, parameter = null) {
+    const proxy = await getNautilusProxy();
+    if (!proxy) return false;
+
+    try {
+        await proxy.call(
+            'Activate',
+            new GLib.Variant('(sav)', [actionName, parameter ? [parameter] : [], {}]),
+            Gio.DBusCallFlags.NONE, -1, null
+        );
+        return true;
     } catch (e) {
-        return null;
+        console.error(`[mactop] Failed to activate Nautilus action ${actionName}: ${e}`);
+        return false;
     }
 }
 
@@ -54,7 +85,6 @@ function isNautilusFocused() {
  */
 function createNewFolder() {
     if (isNautilusFocused()) {
-        // Create a uniquely-named folder on Desktop
         const timestamp = Date.now();
         GLib.spawn_command_line_async(`mkdir -p "${HOME}/Desktop/Untitled Folder ${timestamp}"`);
         return;
@@ -63,83 +93,125 @@ function createNewFolder() {
 }
 
 /**
+ * Get the currently focused Nautilus window's URI.
+ * Returns null if Nautilus is not focused or cannot determine URI.
+ */
+function getNautilusCurrentUri() {
+    try {
+        const focusedWindow = global.display.get_focus_window();
+        if (!focusedWindow) return null;
+        const wmClass = (focusedWindow.get_wm_class() || '').toLowerCase();
+        if (!wmClass.includes('nautilus')) return null;
+
+        // Try to get URI from window title (Nautilus shows "foldername - Files")
+        const title = focusedWindow.get_title() || '';
+        // Nautilus title format: "foldername - Files" or "Files"
+        // We can't reliably get the URI from title, so return null
+        // and let callers use HOME as fallback
+        return null;
+    } catch (e) {
+        return null;
+    }
+}
+
+/**
  * Get list of removable drives/block devices using udisks2.
  * Returns array of {device, name, size, isRemovable, mountPoints}
+ * Cached for 5s to avoid repeated subprocess spawns.
  */
+let _drivesCache = null;
+let _drivesCacheTime = 0;
+const DRIVES_CACHE_TTL_MS = 5000;
+
 async function getRemovableDrives() {
-    return new Promise((resolve) => {
+    const now = Date.now();
+    if (_drivesCache && (now - _drivesCacheTime) < DRIVES_CACHE_TTL_MS) {
+        return _drivesCache;
+    }
+
+    const drives = await new Promise((resolve) => {
         try {
             const subprocess = Gio.Subprocess.new(
                 ['udisksctl', 'dump', '--object-info'],
                 Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE
             );
 
+            const stream = new Gio.DataInputStream({ base_stream: subprocess.get_stdout_pipe() });
             let stdout = '';
-            subprocess.get_stdout_pipe().read_bytes_async(65536, GLib.PRIORITY_DEFAULT, null, (source, result) => {
-                try {
-                    const bytes = source.read_bytes_finish(result);
-                    stdout = new TextDecoder().decode(bytes.get_data());
-                } catch (e) {
-                    // ignore
-                }
-
-                subprocess.wait_check_async(null, (source, result) => {
-                    const drives = [];
+            const readLine = () => {
+                stream.read_line_utf8_async(GLib.PRIORITY_DEFAULT, null, (src, res) => {
                     try {
-                        source.finish(result);
-                        // Parse udisksctl output for removable drives
-                        const lines = stdout.split('\n');
-                        let currentDrive = null;
-
-                        for (const line of lines) {
-                            if (line.startsWith('/org/freedesktop/UDisks2/Block_devices/')) {
-                                if (currentDrive && currentDrive.isRemovable) {
-                                    drives.push(currentDrive);
-                                }
-                                currentDrive = {
-                                    device: line.trim().split('/').pop(),
-                                    name: '',
-                                    size: 0,
-                                    isRemovable: false,
-                                    mountPoints: []
-                                };
-                            } else if (currentDrive) {
-                                if (line.includes('IdUsage=') && line.includes('filesystem')) {
-                                    currentDrive.name = currentDrive.device;
-                                }
-                                if (line.includes('HintSystem=true')) {
-                                    currentDrive.isRemovable = false;
-                                }
-                                if (line.includes('Size=') && !line.includes('PartitionSize')) {
-                                    const match = line.match(/Size=(\d+)/);
-                                    if (match) currentDrive.size = parseInt(match[1], 10);
-                                }
-                                if (line.includes('MountPoints=[') && line.includes('/')) {
-                                    const mountMatch = line.match(/MountPoints=\[(.*?)\]/);
-                                    if (mountMatch) {
-                                        currentDrive.mountPoints = mountMatch[1]
-                                            .split(',')
-                                            .map(s => s.trim().replace(/'/g, ''))
-                                            .filter(s => s.length > 0);
-                                    }
-                                }
-                            }
+                        const [line] = src.read_line_utf8_finish(res);
+                        if (line !== null) {
+                            stdout += line + '\n';
+                            readLine();
+                        } else {
+                            resolve(parseUdisksOutput(stdout));
                         }
-                        // Don't forget the last drive
-                        if (currentDrive && currentDrive.isRemovable) {
-                            drives.push(currentDrive);
-                        }
-                    } catch (e) {
-                        console.error(`[mactop] Failed to parse udisksctl output: ${e}`);
+                    } catch (_e) {
+                        resolve(parseUdisksOutput(stdout));
                     }
-                    resolve(drives);
                 });
-            });
+            };
+            readLine();
         } catch (e) {
             console.error(`[mactop] Failed to run udisksctl: ${e}`);
             resolve([]);
         }
     });
+
+    _drivesCache = drives;
+    _drivesCacheTime = Date.now();
+    return drives;
+}
+
+function parseUdisksOutput(stdout) {
+    const drives = [];
+    try {
+        const lines = stdout.split('\n');
+        let currentDrive = null;
+
+        for (const line of lines) {
+            if (line.startsWith('/org/freedesktop/UDisks2/Block_devices/')) {
+                if (currentDrive && currentDrive.isRemovable) {
+                    drives.push(currentDrive);
+                }
+                currentDrive = {
+                    device: line.trim().split('/').pop(),
+                    name: '',
+                    size: 0,
+                    isRemovable: false,
+                    mountPoints: []
+                };
+            } else if (currentDrive) {
+                if (line.includes('IdUsage=') && line.includes('filesystem')) {
+                    currentDrive.name = currentDrive.device;
+                }
+                if (line.includes('HintSystem=true')) {
+                    currentDrive.isRemovable = false;
+                }
+                if (line.includes('Size=') && !line.includes('PartitionSize')) {
+                    const match = line.match(/Size=(\d+)/);
+                    if (match) currentDrive.size = parseInt(match[1], 10);
+                }
+                if (line.includes('MountPoints=[') && line.includes('/')) {
+                    const mountMatch = line.match(/MountPoints=\[(.*?)\]/);
+                    if (mountMatch) {
+                        currentDrive.mountPoints = mountMatch[1]
+                            .split(',')
+                            .map(s => s.trim().replace(/'/g, ''))
+                            .filter(s => s.length > 0);
+                    }
+                }
+            }
+        }
+        if (currentDrive && currentDrive.isRemovable) {
+            drives.push(currentDrive);
+        }
+    } catch (e) {
+        console.error(`[mactop] Failed to parse udisksctl output: ${e}`);
+    }
+    return drives;
 }
 
 /**
@@ -200,23 +272,33 @@ export const fileActions = {
     'open-settings-ext': () => GLib.spawn_command_line_async('gnome-extensions prefs mactop@anorak'),
     // hide-app, hide-others, show-all — moved to windowActions.js (direct JS eval)
 
-    // File Menu
+    // File Menu - use DBus for Nautilus actions when focused
     'open-finder': () => GLib.spawn_command_line_async(`xdg-open ${HOME}`),
-    'new-finder-win': () => GLib.spawn_command_line_async(`xdg-open ${HOME}`),
+    'new-finder-win': async () => {
+        if (isNautilusFocused()) {
+            const ok = await activateNautilusAction('new-window');
+            if (ok) return;
+        }
+        GLib.spawn_command_line_async(`xdg-open ${HOME}`);
+    },
     'new-folder': () => createNewFolder(),
 
-    'open-settings': () => GLib.spawn_command_line_async('gnome-control-center'),
+    'open-settings': async () => {
+        if (isNautilusFocused()) {
+            const ok = await activateNautilusAction('preferences');
+            if (ok) return;
+        }
+        GLib.spawn_command_line_async('gnome-control-center');
+    },
     'empty-bin': () => GLib.spawn_command_line_async('gio trash --empty'),
 
     'eject': async () => {
-        // Eject - show list of removable drives and eject them
         const drives = await getRemovableDrives();
         if (drives.length === 0) {
             console.log('[mactop] No removable drives found');
             return;
         }
 
-        // Eject all removable drives
         for (const drive of drives) {
             if (drive.mountPoints.length > 0 || drive.size > 0) {
                 await ejectDevice(drive.device);

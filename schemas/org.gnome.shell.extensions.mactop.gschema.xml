@@ -31,6 +31,16 @@
       <summary>Show User Switcher</summary>
       <description>Show the user switcher button in the top panel for fast user switching. Only visible when multiple user accounts exist.</description>
     </key>
+    <key name="user-switcher-display-mode" type="s">
+      <default>'both'</default>
+      <summary>User Switcher Display Mode</summary>
+      <description>What to show in the user switcher button: 'icon' (user avatar), 'username' (text label), or 'both'.</description>
+      <choices>
+        <choice value="icon"/>
+        <choice value="username"/>
+        <choice value="both"/>
+      </choices>
+    </key>
     <!-- Spotlight Search settings -->
     <key name="spotlight-show-panel-icon" type="b">
       <default>false</default>
@@ -38,7 +48,7 @@
       <description>Show a search icon in the top panel to toggle Spotlight search overlay.</description>
     </key>
     <key name="spotlight-keybinding" type="s">
-      default="&lt;Control&gt;&lt;Super&gt;space"
+      <default>'&lt;Control&gt;&lt;Super&gt;space'</default>
       <summary>Spotlight Keybinding</summary>
       <description>Global keyboard shortcut to toggle Spotlight search overlay.</description>
     </key>
@@ -48,12 +58,12 @@
       <description>Apply a blurred background effect to the Spotlight overlay. Requires imagemagick to be installed.</description>
     </key>
     <key name="spotlight-background-color" type="s">
-      default="rgba(0,0,0,0.8)"
+      <default>'rgba(0,0,0,0.8)'</default>
       <summary>Spotlight Background Color</summary>
       <description>Background color for the Spotlight overlay (CSS rgba format).</description>
     </key>
     <key name="spotlight-panel-icon-color" type="s">
-      default="rgba(255,255,255,1)"
+      <default>'rgba(255,255,255,1)'</default>
       <summary>Spotlight Panel Icon Color</summary>
       <description>Color of the Spotlight panel icon (CSS rgba format).</description>
     </key>

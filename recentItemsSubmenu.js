@@ -31,6 +31,7 @@ const APPLICATION_SORT_MODE = 'usage'; // 'usage' or 'recent'
 const HOVER_CLOSE_DELAY_MS = 200;
 const RECENT_OPEN_DELAY_MS = 500;
 const POINTER_TOLERANCE_PX = 8;
+const FILE_INFO_CACHE_TTL_MS = 5000;
 
 const PointerState = {
   INSIDE_RECENT: 0,
@@ -41,9 +42,11 @@ const PointerState = {
 
 Gio._promisify(Gio.File.prototype, 'load_bytes_async');
 
+const _textDecoder = new TextDecoder();
+
 async function loadFileTextAsync(file, cancellable) {
   const [bytes] = await file.load_bytes_async(cancellable);
-  return new TextDecoder().decode(bytes.get_data());
+  return _textDecoder.decode(bytes.get_data());
 }
 
 /**
@@ -79,6 +82,7 @@ export const RecentItemsSubmenu = GObject.registerClass(
     this._globalHoverMonitorId = 0;
     this._cancellable = new Gio.Cancellable();
     this._isDestroyed = false;
+    this._fileInfoCache = new Map();
 
     // Build UI
     const label = new St.Label({
@@ -120,7 +124,6 @@ export const RecentItemsSubmenu = GObject.registerClass(
     this.actor.connect('button-press-event', () => {
       this._cancelClose();
       this._cancelOpenDelay();
-      this._ensureRecentMenuAndOpen().catch(logError);
       return Clutter.EVENT_STOP;
     });
 
@@ -137,6 +140,10 @@ export const RecentItemsSubmenu = GObject.registerClass(
     if (this._cancellable) {
       this._cancellable.cancel();
       this._cancellable = null;
+    }
+
+    if (this._fileInfoCache) {
+      this._fileInfoCache.clear();
     }
 
     // Clean up all timeouts before destroying
@@ -168,10 +175,10 @@ export const RecentItemsSubmenu = GObject.registerClass(
   async _populateMenu(menu) {
     menu.removeAll();
 
-    const recentItems = await this._getRecentItems();
-    if (this._isDestroyed) return;
-
-    const recentApplications = await this._getRecentApplications(APPLICATIONS_RECENT_LIMIT);
+    const [recentItems, recentApplications] = await Promise.all([
+      this._getRecentItems(),
+      this._getRecentApplications(APPLICATIONS_RECENT_LIMIT),
+    ]);
     if (this._isDestroyed) return;
 
     const files = [];
@@ -781,25 +788,35 @@ export const RecentItemsSubmenu = GObject.registerClass(
       return null;
     }
 
+    const cached = this._fileInfoCache.get(`${uri}::icon`);
+    if (cached && (Date.now() - cached.time) < FILE_INFO_CACHE_TTL_MS) {
+      return cached.icon;
+    }
+
+    let icon = null;
     try {
       const file = Gio.File.new_for_uri(uri);
       if (!file.query_exists(null)) {
+        this._fileInfoCache.set(`${uri}::icon`, { icon: null, time: Date.now() });
         return null;
       }
 
       const info = file.query_info('standard::icon,standard::type', Gio.FileQueryInfoFlags.NONE, null);
       if (info) {
-        return info.get_icon?.() ?? null;
+        icon = info.get_icon?.() ?? null;
       }
     } catch (_error) {
       // Swallow errors; fall back to themed icon based on item type.
     }
 
-    if (isDirectory) {
-      return new Gio.ThemedIcon({ names: ['folder-symbolic'] });
+    if (!icon) {
+      if (isDirectory) {
+        icon = new Gio.ThemedIcon({ names: ['folder-symbolic'] });
+      }
     }
 
-    return null;
+    this._fileInfoCache.set(`${uri}::icon`, { icon, time: Date.now() });
+    return icon;
   }
 
   _launchRecentUri(uri) {
@@ -999,6 +1016,14 @@ export const RecentItemsSubmenu = GObject.registerClass(
       return [];
     }
 
+    // Evict expired cache entries
+    const now = Date.now();
+    for (const [key, entry] of this._fileInfoCache) {
+      if (now - entry.time >= FILE_INFO_CACHE_TTL_MS) {
+        this._fileInfoCache.delete(key);
+      }
+    }
+
     let text;
     try {
       text = await loadFileTextAsync(file, this._cancellable);
@@ -1050,23 +1075,28 @@ export const RecentItemsSubmenu = GObject.registerClass(
         }
       }
 
-      // Determine if this is a directory
+      // Determine if this is a directory (cached to avoid repeated sync I/O)
       let isDirectory = false;
       if (uri.startsWith('file://')) {
-        try {
-          const filePath = uri.substring('file://'.length);
-          const file = Gio.File.new_for_path(filePath);
-          if (file.query_exists(null)) {
-            const fileInfo = file.query_info(
-              'standard::type',
-              Gio.FileQueryInfoFlags.NONE,
-              null
-            );
-            isDirectory = fileInfo.get_file_type() === Gio.FileType.DIRECTORY;
+        const cached = this._fileInfoCache.get(uri);
+        if (cached && (Date.now() - cached.time) < FILE_INFO_CACHE_TTL_MS) {
+          isDirectory = cached.isDirectory;
+        } else {
+          try {
+            const filePath = uri.substring('file://'.length);
+            const file = Gio.File.new_for_path(filePath);
+            if (file.query_exists(null)) {
+              const fileInfo = file.query_info(
+                'standard::type',
+                Gio.FileQueryInfoFlags.NONE,
+                null
+              );
+              isDirectory = fileInfo.get_file_type() === Gio.FileType.DIRECTORY;
+            }
+          } catch (error) {
+            isDirectory = false;
           }
-        } catch (error) {
-          // If we can't determine, assume it's a file
-          isDirectory = false;
+          this._fileInfoCache.set(uri, { isDirectory, time: Date.now() });
         }
       }
 

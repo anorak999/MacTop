@@ -200,7 +200,7 @@ export const UserSwitcherButton = GObject.registerClass(
         }
 
         _updateDisplayMode() {
-            const mode = this._extension?._settings?.get_string('user-switcher-display-mode') ?? 'icon';
+            const mode = this._extension?._settings?.get_string('user-switcher-display-mode') ?? 'both';
             switch (mode) {
                 case 'username':
                     this._buttonIcon.visible = false;

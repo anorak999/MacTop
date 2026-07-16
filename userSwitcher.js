@@ -167,14 +167,26 @@ export const UserSwitcherButton = GObject.registerClass(
                 icon_size: 18,
                 style_class: 'mactop-user-switcher-button',
             });
-            this.add_child(this._buttonIcon);
 
             this._usernameLabel = new St.Label({
                 text: GLib.get_user_name(),
                 style_class: 'panel-button-label',
                 y_align: Clutter.ActorAlign.CENTER,
             });
-            this.add_child(this._usernameLabel);
+
+            // PanelMenu.Button lays out a single child reliably; combining an
+            // icon and a label as two direct children can leave them stacked
+            // instead of flowing in a row, and toggling one child's visibility
+            // doesn't always trigger the panel to recompute the button's
+            // allocated width. Wrap both in an explicit box so they lay out
+            // side-by-side and share one predictable allocation.
+            this._contentBox = new St.BoxLayout({
+                style_class: 'mactop-user-switcher-content',
+                y_align: Clutter.ActorAlign.CENTER,
+            });
+            this._contentBox.add_child(this._buttonIcon);
+            this._contentBox.add_child(this._usernameLabel);
+            this.add_child(this._contentBox);
 
             this._updateDisplayMode();
             this._settingsChangedId = this._extension?._settings?.connect('changed::user-switcher-display-mode', () => {
@@ -216,6 +228,15 @@ export const UserSwitcherButton = GObject.registerClass(
                     this._usernameLabel.visible = false;
                     break;
             }
+
+            // A visibility flip on a child doesn't always prompt the panel's
+            // box (leftBox/centerBox/rightBox) to re-query this button's
+            // preferred width, which can leave the newly-shown widget
+            // clipped to the previous allocation. Queue an explicit relayout
+            // on both the inner content box and the button itself so the
+            // panel picks up the new natural size immediately.
+            this._contentBox?.queue_relayout();
+            this.queue_relayout();
         }
 
         destroy() {
@@ -243,6 +264,8 @@ export const UserSwitcherButton = GObject.registerClass(
             this._loginManagerProxyPromise = null;
             this._userManager = null;
             this._usernameLabel = null;
+            this._buttonIcon = null;
+            this._contentBox = null;
             this._extension = null;
 
             super.destroy();

@@ -39,6 +39,10 @@
     margin-right: 3px;
 }
 
+.mactop-user-switcher-content {
+    spacing: 2px;
+}
+
 .mactop-user-switcher-button + .panel-button-label {
     margin-left: 2px;
 }

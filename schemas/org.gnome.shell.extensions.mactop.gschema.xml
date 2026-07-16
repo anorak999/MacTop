@@ -57,15 +57,14 @@
       <summary>Spotlight Blur Background</summary>
       <description>Apply a blurred background effect to the Spotlight overlay. Requires imagemagick to be installed.</description>
     </key>
-    <key name="spotlight-background-color" type="s">
-      <default>'rgba(245,245,247,0.75)'</default>
-      <summary>Spotlight Background Color</summary>
-      <description>Background color for the Spotlight overlay (CSS rgba format).</description>
-    </key>
-    <key name="spotlight-panel-icon-color" type="s">
-      <default>'rgba(255,255,255,1)'</default>
-      <summary>Spotlight Panel Icon Color</summary>
-      <description>Color of the Spotlight panel icon (CSS rgba format).</description>
+    <key name="spotlight-theme" type="s">
+      <default>'light'</default>
+      <summary>Spotlight Theme</summary>
+      <description>Color theme for the Spotlight overlay ('light' or 'dark').</description>
+      <choices>
+        <choice value="light"/>
+        <choice value="dark"/>
+      </choices>
     </key>
     <key name="spotlight-use-animations" type="b">
       <default>true</default>

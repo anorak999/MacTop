@@ -117,28 +117,29 @@
 /*          Spotlight Styles                     */
 /*###############################################*/
 #spotlightSearch {
-    background: rgba(245, 245, 247, 0.75);
-    border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    background: rgba(230, 238, 255, 0.88);
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.2);
 }
 
 #spotlightBox {
-    padding: 12px 16px;
+    padding: 16px 20px;
 }
 
 .spotlight-entry {
-    font-size: 16pt;
+    font-size: 20pt;
+    font-weight: 500;
     padding: 10px 14px;
     border-radius: 8px;
-    background-color: rgba(0, 0, 0, 0.05);
-    color: #333;
-    caret-color: #333;
+    background-color: transparent;
+    color: #1a1a24;
+    caret-color: #1a1a24;
     caret-size: 2px;
 }
 
 .spotlight-entry:focus {
-    background-color: rgba(0, 0, 0, 0.08);
+    background-color: transparent;
 }
 
 #spotlightResults {

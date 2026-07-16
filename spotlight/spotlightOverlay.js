@@ -47,6 +47,7 @@ export class SpotlightOverlay {
         this._animSeq = null;
         this._blurEffect = null;
         this._divider = null;
+        this._suggestionRow = null;
         this._resultsChangedId = 0;
     }
 
@@ -98,6 +99,10 @@ export class SpotlightOverlay {
             this,
         );
 
+        this._themeChangedId = this._settings?.connect('changed::spotlight-theme', () => {
+            this._updateCss();
+        });
+
         this._updateCss();
     }
 
@@ -128,6 +133,11 @@ export class SpotlightOverlay {
         Shell.AppSystem.get_default().disconnectObject(this);
         global.display.disconnectObject(this);
 
+        if (this._themeChangedId && this._settings) {
+            this._settings.disconnect(this._themeChangedId);
+            this._themeChangedId = null;
+        }
+
         this._release_ui();
     }
 
@@ -145,6 +155,116 @@ export class SpotlightOverlay {
         } catch (_e) {
             this._blurEffect = null;
         }
+    }
+
+    _setupSuggestionRow() {
+        if (this._suggestionWrapper) return;
+
+        this._suggestionWrapper = new St.BoxLayout({
+            orientation: Clutter.Orientation.VERTICAL,
+            x_expand: true,
+            y_expand: true,
+            style_class: 'spotlight-suggestion-wrapper'
+        });
+
+        // 1. Categories Row
+        this._categoryRow = new St.BoxLayout({
+            style_class: 'spotlight-category-row',
+            x_expand: true,
+            x_align: Clutter.ActorAlign.START,
+        });
+
+        let catScroll = new St.ScrollView({
+            vscrollbar_policy: St.PolicyType.NEVER,
+            hscrollbar_policy: St.PolicyType.NEVER,
+            style_class: 'spotlight-category-scroll',
+            x_expand: true,
+        });
+        catScroll.add_actor(this._categoryRow);
+
+        let categories = ['Utilities', 'Social', 'Productivity & Finance', 'Photo & Video', 'Health & Fitness', 'Information'];
+        for (let cat of categories) {
+            let btn = new St.Button({
+                label: cat,
+                style_class: 'spotlight-category-pill',
+            });
+            this._categoryRow.add_child(btn);
+        }
+        
+        this._suggestionWrapper.add_child(catScroll);
+
+        // 2. Apps Grid
+        this._appGrid = new Clutter.FlowLayout({
+            orientation: Clutter.Orientation.HORIZONTAL,
+            homogeneous: true,
+            column_spacing: 16,
+            row_spacing: 24,
+        });
+
+        let gridWidget = new St.Widget({
+            layout_manager: this._appGrid,
+            style_class: 'spotlight-app-grid',
+            x_expand: true,
+            y_expand: true,
+        });
+        
+        // Populate apps
+        const appSys = Shell.AppSystem.get_default();
+        let apps = appSys.get_running().concat(appSys.get_installed());
+        // Simple distinct
+        apps = apps.filter((v, i, a) => a.findIndex(app => app.get_id() === v.get_id()) === i);
+        
+        let count = 0;
+        for (let i = 0; i < apps.length && count < 25; i++) {
+            const app = apps[i];
+            if (!app || !app.get_id()) continue;
+            
+            let icon = app.create_icon_texture(64);
+            if (!icon) continue;
+
+            let name = app.get_name();
+            
+            let btn = new St.Button({
+                style_class: 'spotlight-app-btn',
+                x_expand: true,
+                y_expand: true,
+            });
+
+            let box = new St.BoxLayout({
+                orientation: Clutter.Orientation.VERTICAL,
+                x_align: Clutter.ActorAlign.CENTER,
+            });
+            
+            box.add_child(icon);
+            
+            let label = new St.Label({
+                text: name,
+                style_class: 'spotlight-app-label',
+            });
+            // Approximate ellipsize for Clutter.Text (using internal actor if needed, but styling usually handles this)
+            
+            box.add_child(label);
+            btn.set_child(box);
+            
+            btn.connect('clicked', () => {
+                app.open_new_window(-1);
+                this.hide();
+            });
+            
+            gridWidget.add_child(btn);
+            count++;
+        }
+
+        let gridScroll = new St.ScrollView({
+            vscrollbar_policy: St.PolicyType.AUTOMATIC,
+            hscrollbar_policy: St.PolicyType.NEVER,
+            style_class: 'spotlight-grid-scroll',
+            x_expand: true,
+            y_expand: true,
+        });
+        gridScroll.add_actor(gridWidget);
+
+        this._suggestionWrapper.add_child(gridScroll);
     }
 
     show() {
@@ -261,18 +381,41 @@ export class SpotlightOverlay {
             this._searchResults._activateDefault();
         };
 
+        this._headerContainer = new St.BoxLayout({
+            style_class: 'spotlight-header-container',
+            x_expand: true,
+            y_align: Clutter.ActorAlign.CENTER,
+        });
+
         if (this._entry.get_parent()) this._entry.get_parent().remove_child(this._entry);
-        this._container.add_child(this._entry);
+        this._entry.x_expand = true;
+        this._headerContainer.add_child(this._entry);
+
+        this._moreButton = new St.Button({
+            style_class: 'spotlight-more-button',
+            child: new St.Icon({
+                icon_name: 'view-more-symbolic',
+                icon_size: 20
+            }),
+            y_align: Clutter.ActorAlign.CENTER,
+        });
+        this._headerContainer.add_child(this._moreButton);
+
+        this._container.add_child(this._headerContainer);
 
         // Add divider between entry and results
         if (!this._divider) {
             this._divider = new St.Widget({
-                style: 'height: 1px; background-color: rgba(0,0,0,0.12); margin: 2px 0;',
+                style: 'height: 1px; background-color: rgba(0,0,0,0.08); margin: 4px 0;',
                 x_expand: true,
             });
         }
         if (this._divider.get_parent()) this._divider.get_parent().remove_child(this._divider);
         this._container.add_child(this._divider);
+
+        this._setupSuggestionRow();
+        if (this._suggestionWrapper.get_parent()) this._suggestionWrapper.get_parent().remove_child(this._suggestionWrapper);
+        this._container.add_child(this._suggestionWrapper);
 
         if (this._search.get_parent()) this._search.get_parent().remove_child(this._search);
         this._container.add_child(this._search);
@@ -284,6 +427,10 @@ export class SpotlightOverlay {
 
         this._search._text.get_parent().grab_key_focus();
         this._textChangedEventId = this._search._text.connect('text-changed', () => {
+            const hasText = this._search._text.get_text().length > 0;
+            if (this._suggestionWrapper) {
+                this._suggestionWrapper.visible = !hasText;
+            }
             this._search.show();
             this._layout();
         });
@@ -298,6 +445,10 @@ export class SpotlightOverlay {
             this._divider.get_parent().remove_child(this._divider);
         }
 
+        if (this._suggestionWrapper && this._suggestionWrapper.get_parent()) {
+            this._suggestionWrapper.get_parent().remove_child(this._suggestionWrapper);
+        }
+
         if (this._resultsChangedId && this._searchResults) {
             this._searchResults.disconnect(this._resultsChangedId);
             this._resultsChangedId = 0;
@@ -307,6 +458,12 @@ export class SpotlightOverlay {
             if (this._entry.get_parent()) this._entry.get_parent().remove_child(this._entry);
             this._entryParent?.add_child(this._entry);
             this._entry = null;
+        }
+
+        if (this._headerContainer && this._headerContainer.get_parent()) {
+            this._headerContainer.get_parent().remove_child(this._headerContainer);
+            this._headerContainer = null;
+            this._moreButton = null;
         }
 
         if (this._search) {
@@ -356,20 +513,34 @@ export class SpotlightOverlay {
         this._queryDisplay();
         if (!this._monitor) return;
 
-        this._width = Math.min(720, this._sw * 0.55);
-
         // Count visible result children for dynamic height
         const resultChildren = this._searchResults?.get_children() ?? [];
         const nResults = resultChildren.filter(c => c.visible).length;
+        const hasQuery = this._search?._text?.get_text()?.length > 0;
+        const showSuggestions = !hasQuery && nResults === 0;
+
+        // Narrower width for empty/suggestion state
+        this._width = showSuggestions
+            ? Math.min(840, this._sw * 0.65)
+            : Math.min(720, this._sw * 0.55);
 
         const BAR_ONLY_HEIGHT = 70;
         const ROW_HEIGHT = 42;
-        const MAX_RESULTS_HEIGHT = 360;
+        const SUGGESTION_HEIGHT = 580;
+        const MAX_RESULTS_HEIGHT = 420;
 
-        const resultsHeight = nResults > 0
-            ? Math.min(nResults * ROW_HEIGHT, MAX_RESULTS_HEIGHT)
-            : 0;
-        this._height = BAR_ONLY_HEIGHT + resultsHeight;
+        let extraHeight = 0;
+        if (showSuggestions) {
+            extraHeight = SUGGESTION_HEIGHT;
+        } else if (nResults > 0) {
+            extraHeight = Math.min(nResults * ROW_HEIGHT, MAX_RESULTS_HEIGHT);
+        }
+        this._height = BAR_ONLY_HEIGHT + extraHeight;
+
+        // Toggle suggestion visibility
+        if (this._suggestionWrapper) {
+            this._suggestionWrapper.visible = showSuggestions;
+        }
 
         let x = this._monitor.x + (this._sw - this._width) / 2;
         let y = this._monitor.y + this._sh * 0.30;
@@ -397,26 +568,50 @@ export class SpotlightOverlay {
             this._mainContainer.set_position(x, y);
         }
 
-        // Show divider only when results are present
+        // Show divider only when results are present (hide for suggestion state)
         if (this._divider) {
             this._divider.visible = nResults > 0;
         }
     }
 
     _updateCss() {
-        let bgColor = this._settings?.get_string('spotlight-background-color') || 'rgba(245,245,247,0.75)';
-        let iconColor = this._settings?.get_string('spotlight-panel-icon-color') || 'rgba(33,33,33,1)';
+        let theme = this._settings?.get_string('spotlight-theme') || 'light';
+        let isDark = theme === 'dark';
+
+        let bgColor = isDark ? 'rgba(30, 30, 35, 0.85)' : 'rgba(230, 238, 255, 0.88)';
+        let textColor = isDark ? '#eaeaea' : '#1a1a24';
+        let subTextColor = isDark ? '#aaa' : '#666';
+        let borderColor = isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.6)';
+        let hoverBg = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)';
+        let pillBg = isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.6)';
+        let pillHoverBg = isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.9)';
+        let iconColor = isDark ? 'rgba(255, 255, 255, 1)' : 'rgba(33, 33, 33, 1)';
+        let moreBtnBg = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)';
+        let moreBtnHoverBg = isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.08)';
+        let shadowColor = isDark ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.2)';
 
         let styles = [
-            `#spotlightSearch { background: ${bgColor}; border-radius: 20px; border: 1px solid rgba(255,255,255,0.5); box-shadow: 0 8px 32px rgba(0,0,0,0.12); }`,
-            `#spotlightBox { padding: 12px 16px; }`,
-            `.spotlight > * { font-size: 16pt; color: #333; }`,
-            `.spotlight-entry { color: #333; caret-color: #333; background-color: rgba(0,0,0,0.05); }`,
-            `.spotlight-entry:focus { background-color: rgba(0,0,0,0.08); }`,
-            `.spotlight-result-name { color: #333; }`,
-            `.spotlight-result-description { color: #666; }`,
-            `.spotlight-result-item:hover, .spotlight-result-item:focus { background-color: rgba(0,0,0,0.06); }`,
-            `.spotlight-placeholder, .spotlight-error { color: #999; }`,
+            `#spotlightSearch { background: ${bgColor}; border-radius: 24px; border: 1px solid ${borderColor}; box-shadow: 0 12px 48px ${shadowColor}; }`,
+            `#spotlightBox { padding: 16px 20px; }`,
+            `.spotlight-header-container { spacing: 12px; margin-bottom: 4px; }`,
+            `.spotlight-entry, .spotlight-entry .clutter-text { font-size: 20pt; color: ${textColor}; caret-color: ${textColor}; font-weight: 500; }`,
+            `.spotlight-entry { background-color: transparent; border: none; box-shadow: none; }`,
+            `.spotlight-entry:focus { background-color: transparent; box-shadow: none; }`,
+            `.spotlight-more-button { border-radius: 99px; width: 32px; height: 32px; color: ${textColor}; background-color: ${moreBtnBg}; border: 1px solid ${borderColor}; padding: 5px; }`,
+            `.spotlight-more-button:hover { background-color: ${moreBtnHoverBg}; }`,
+            `.spotlight-result-name { color: ${textColor}; }`,
+            `.spotlight-result-description { color: ${subTextColor}; }`,
+            `.spotlight-result-item:hover, .spotlight-result-item:focus { background-color: ${hoverBg}; }`,
+            `.spotlight-placeholder, .spotlight-error { color: ${subTextColor}; }`,
+            `.spotlight-suggestion-wrapper { padding-top: 8px; }`,
+            `.spotlight-category-row { spacing: 10px; padding: 4px 0 16px 0; }`,
+            `.spotlight-category-pill { padding: 6px 16px; border-radius: 99px; background-color: ${pillBg}; color: ${textColor}; font-weight: 600; font-size: 11pt; border: 1px solid ${borderColor}; transition: background-color 0.2s; }`,
+            `.spotlight-category-pill:hover { background-color: ${pillHoverBg}; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }`,
+            `.spotlight-app-grid { padding: 8px 12px 24px 12px; }`,
+            `.spotlight-app-btn { width: 110px; height: 130px; border-radius: 16px; transition: background-color 0.2s, scale 0.2s; }`,
+            `.spotlight-app-btn:hover { background-color: ${hoverBg}; }`,
+            `.spotlight-app-btn:active { background-color: ${hoverBg}; scale: 0.95; }`,
+            `.spotlight-app-label { margin-top: 10px; text-align: center; font-size: 10.5pt; color: ${textColor}; font-weight: 500; text-shadow: 0 1px 2px rgba(0,0,0,0.1); }`,
             `.panel-status-indicator-icon { color: ${iconColor}; }`,
         ];
 

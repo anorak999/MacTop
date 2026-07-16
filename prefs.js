@@ -199,19 +199,33 @@ export default class MacTopPreferences extends ExtensionPreferences {
         settings.bind('spotlight-keybinding', keybindingRow, 'text', Gio.SettingsBindFlags.DEFAULT);
         spotlightGroup.add(keybindingRow);
 
-        // Background color
-        const bgColorRow = new Adw.EntryRow({
-            title: 'Background Color (CSS rgba)',
-        });
-        settings.bind('spotlight-background-color', bgColorRow, 'text', Gio.SettingsBindFlags.DEFAULT);
-        spotlightGroup.add(bgColorRow);
+        // Theme
+        const themeModel = new Gtk.StringList();
+        themeModel.append('Light');
+        themeModel.append('Dark');
 
-        // Panel icon color
-        const iconColorRow = new Adw.EntryRow({
-            title: 'Panel Icon Color (CSS rgba)',
+        const themeRow = new Adw.ComboRow({
+            title: 'Theme',
+            subtitle: 'Choose between Light and Dark glassmorphism.',
+            model: themeModel,
         });
-        settings.bind('spotlight-panel-icon-color', iconColorRow, 'text', Gio.SettingsBindFlags.DEFAULT);
-        spotlightGroup.add(iconColorRow);
+
+        const themeMap = { 'light': 0, 'dark': 1 };
+        const reverseThemeMap = ['light', 'dark'];
+
+        const currentTheme = settings.get_string('spotlight-theme');
+        themeRow.selected = themeMap[currentTheme] ?? 0;
+
+        themeRow.connect('notify::selected', () => {
+            settings.set_string('spotlight-theme', reverseThemeMap[themeRow.selected]);
+        });
+
+        settings.connect('changed::spotlight-theme', () => {
+            const theme = settings.get_string('spotlight-theme');
+            themeRow.selected = themeMap[theme] ?? 0;
+        });
+
+        spotlightGroup.add(themeRow);
 
         // === About Page ===
         const aboutPage = new Adw.PreferencesPage({

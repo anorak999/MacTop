@@ -31,7 +31,7 @@ A macOS-inspired global menu for GNOME Shell — places a clean, unified applica
 ## Installation
 
 ```bash
-git clone https://github.com/anorak999/MacTop.git
+git clone https://github.com/Himath-Rajapaksha/MacTop.git
 cd MacTop
 bash install.sh
 ```

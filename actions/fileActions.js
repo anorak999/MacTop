@@ -243,7 +243,7 @@ export const fileActions = {
     // Feedback
     'send-feedback': () => {
         Gio.AppInfo.launch_default_for_uri(
-            'https://github.com/anorak999/MacTop',
+            'https://github.com/Himath-Rajapaksha/MacTop',
             global.create_app_launch_context(0, -1)
         );
     },
@@ -254,7 +254,7 @@ export const fileActions = {
 
     'about-mactop': () => {
         Gio.AppInfo.launch_default_for_uri(
-            'https://github.com/anorak999/MacTop',
+            'https://github.com/Himath-Rajapaksha/MacTop',
             global.create_app_launch_context(0, -1)
         );
     },
